@@ -7,7 +7,7 @@
 
 ## General info
 
-This project is a node js event indexer targeted to the nft-marketplace implemented for the LimeAcademy Bootcamp see: https://github.com/baltasarromero/lma-nft-marketplacesimple 
+This project is a node js event indexer targeted to the nft-marketplace implemented for the LimeAcademy Bootcamp see: [NFT Marketplace](https://github.com/baltasarromero/lma-nft-marketplacesimple) 
 
 This indexer listens and stores in a PostgreSQL database the following events:
   - ListingCreated
@@ -20,19 +20,24 @@ Besides raw event tables and a record of the executions this app keeps a process
 
 ## Technologies
 
-Project is created with:
+Project is created and validated with the following dependencies/versions:
 
-- Node js
-- Ethers: 5.7.2
-- Prisma 
+- Node js v18.14.0
+- Ethers v5.7.2
+- Prisma v4.11.0
+- Prisma/client v4.11.0
+
+Other Dependencies
+- Dotenv v16.0.3
+- Node-cron v3.0.2
 
 ## Setup
 
 To setup this project, clone the repo and then install the dependencies using using npm:
 
 ```
-$ cd ./lma-nft-marketplace-event-indexer
-$ npm install
+cd ./lma-nft-marketplace-event-indexer
+npm install
 ```
 
 ### Dependencies
@@ -50,23 +55,25 @@ DATABASE_URL="postgresql://{USER_NAME}:{PASSWORD}@{HOST}:{PORT}/{DATABASE_NAME}?
 ```
 ETHEREUM_NETWORK = {NETWORK-NAME} //The name of the network where the NFTMarketplace is deployed. NFT Marketplace is currently deployed  in sepolia
 INFURA_PROJECT_ID = {INFURA_PROJECT_ID} //Your Infura project ID
-NFT_MARKETPLACE_CONTRACT_ADDRESS = {NFT_MARKETPLACE_CONTRACT_ADDRESS}
+NFT_MARKETPLACE_CONTRACT_ADDRESS = {NFT_MARKETPLACE_CONTRACT_ADDRESS} // Currently sepolia address is 0x0681F44AADF8FA1eA9aC001cF0AB688266c68985
 ```
 ### Scheduler Configuration
+This is an example that will run the job every minute for more details on cron expressions see https://www.npmjs.com/package/node-cron
 ```
-JOB_EXECUTION_CRON = * * * * * // this is an example that will run the job every minute for more details on cron expressions see https://www.npmjs.com/package/node-cron
+JOB_EXECUTION_CRON = * * * * * 
 ```
 ### Prisma
 Once the database is available and the environment variable is properly set, run the following command in order to create the tables defined in 
-./prisma/schema.prisma
+[prisma schema](prisma/schema.prisma)
+
 Run prisma migrations
 ```
-$ npx prisma migrate --dev
+npx prisma migrate --dev
 ```
 ## How to start the indexer job
 The following command starts the indexer job which will run based on the configuration defined in the above mentioned var "JOB_EXECUTION_CRON"
 ```
-$ npm run start-indexer-job
+npm run start-indexer-job
 ```
 ## Pending
 Implement logic to process raw events and reflect consolidated listing state in order to support queries from an API.

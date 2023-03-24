@@ -28,7 +28,7 @@ class PurchaseEventDataAccess {
             if (e instanceof Prisma.PrismaClientKnownRequestError) {
                 if (e.code === "P2002") {
                     console.log(
-                        "Unique constraint violation, this PurchaseEvent is already saved."
+                        "Unique constraint violation, PurchaseEvent already saved."
                     );
                 }
             } else {

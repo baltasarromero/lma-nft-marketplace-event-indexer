@@ -2,15 +2,18 @@
 const { PrismaClient, Prisma } = require("@prisma/client");
 const client = new PrismaClient();
 
+import { BigNumber } from "ethers";
+
+
 class ListingCreatedEventDataAccess {
 
-    async saveListingCreatedEvent(
-        args: any,
-        eventBlockNumber: number,
+    async saveRawListingCreatedEvent(
+        args: Map<string, any>,
+        eventBlockNumber: BigNumber,
         transactionHash: string
-    ) {
+    ) : Promise<number> {
         try {
-            await client.listingCreatedEvent.create({
+            const listingCreatedEvent = await client.listingCreatedEvent.create({
                 data: {
                     nftAddress: args["nftAddress"],
                     tokenId: parseInt(args["tokenId"].toString()),
@@ -19,12 +22,14 @@ class ListingCreatedEventDataAccess {
                     listingTimestamp: new Date(
                         args["listingTimestamp"].toString() * 1000
                     ),
-                    blockNumber: eventBlockNumber,
+                    blockNumber: eventBlockNumber.toString(),
                     transactionHash: transactionHash,
                 },
             });
             console.log("Saved new ListingCreatedEvent");
+            return listingCreatedEvent.id;
         } catch (e) {
+            console.log(e);
             if (e instanceof Prisma.PrismaClientKnownRequestError) {
                 if (e.code === "P2002") {
                     console.log(

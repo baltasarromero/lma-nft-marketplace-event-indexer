@@ -12,11 +12,13 @@ const purchaseEventServiceInstance = new PurchaseEventService();
 module.exports = async function () {
     console.log("Starting indexer job");
 
-    await Promise.all([
-        listingCreatedEventServiceInstance.getNewEvents(),
-        listingCancelledEventServiceInstance.getNewEvents(),
-        purchaseEventServiceInstance.getNewEvents(),
-    ]);
+    // We force the order of event processing to simplify the logic to consolidate data
+    await listingCreatedEventServiceInstance.getNewEvents();
+    console.log("Done processed created events");
+    await listingCancelledEventServiceInstance.getNewEvents();
+    console.log("Done processed cancelled events");
+    await purchaseEventServiceInstance.getNewEvents();
+    console.log("Done processed purchase events");
 
     console.log("Finished querying events for NFT Marketplace");
 };

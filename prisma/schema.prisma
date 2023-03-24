@@ -59,22 +59,29 @@ model User {
   purchases   Listing[] @relation("Purchases")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  @@unique([address])
 }
 
 model Listing {
-  id                Int      @id @default(autoincrement()) 
-  nftAddress        String
-  tokenId           Int
-  seller            User     @relation(name: "Listings", fields: [sellerId], references: [id])
-  sellerId          Int
-  buyer             User?    @relation(name: "Purchases",  fields: [buyerId], references: [id])
-  buyerId           Int?
-  price             Float
-  sold              Boolean  @default(false)
-  status            Status   @default(OPEN)
-  ListingStart      DateTime
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                   Int      @id @default(autoincrement()) 
+  nftAddress           String
+  tokenId              Decimal @db.Decimal(78,0)
+  seller               User     @relation(name: "Listings", fields: [sellerId], references: [id])
+  sellerId             Int
+  buyer                User?    @relation(name: "Purchases",  fields: [buyerId], references: [id])
+  buyerId              Int?
+  price                Decimal @db.Decimal(78,0)
+  sold                 Boolean  @default(false)
+  status               Status   @default(OPEN)
+  listedAt     DateTime
+  listedBlockNumber   Decimal @db.Decimal(78,0)
+  cancelledAt   DateTime?
+  cancelledBlockNumber Decimal? @db.Decimal(78,0)
+  purchasedAt    DateTime? 
+  purchasedBlockNumber  Decimal? @db.Decimal(78,0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  @@unique([nftAddress, tokenId, status])
 }
 
 // Latest block per event
@@ -89,7 +96,7 @@ model Execution {
 enum Status {
   OPEN
   CANCELLED
-  CLOSED
+  PURCHASED
 }
 
 enum EventType {

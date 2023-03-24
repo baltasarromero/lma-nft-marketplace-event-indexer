@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "Status" AS ENUM ('OPEN', 'CANCELLED', 'CLOSED');
+CREATE TYPE "Status" AS ENUM ('OPEN', 'CANCELLED', 'PURCHASED');
 
 -- CreateEnum
 CREATE TYPE "EventType" AS ENUM ('LISTING_CREATED', 'LISTING_CANCELLED', 'PURCHASE');
@@ -65,13 +65,18 @@ CREATE TABLE "User" (
 CREATE TABLE "Listing" (
     "id" SERIAL NOT NULL,
     "nftAddress" TEXT NOT NULL,
-    "tokenId" INTEGER NOT NULL,
+    "tokenId" DECIMAL(78,0) NOT NULL,
     "sellerId" INTEGER NOT NULL,
     "buyerId" INTEGER,
-    "price" DOUBLE PRECISION NOT NULL,
+    "price" DECIMAL(78,0) NOT NULL,
     "sold" BOOLEAN NOT NULL DEFAULT false,
     "status" "Status" NOT NULL DEFAULT 'OPEN',
-    "ListingStart" TIMESTAMP(3) NOT NULL,
+    "listedAt" TIMESTAMP(3) NOT NULL,
+    "listedBlockNumber" DECIMAL(78,0) NOT NULL,
+    "cancelledAt" TIMESTAMP(3),
+    "cancelledBlockNumber" DECIMAL(78,0),
+    "purchasedAt" TIMESTAMP(3),
+    "purchasedBlockNumber" DECIMAL(78,0),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -90,6 +95,18 @@ CREATE TABLE "Execution" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ListingCreatedEvent_nftAddress_tokenId_listingTimestamp_key" ON "ListingCreatedEvent"("nftAddress", "tokenId", "listingTimestamp");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ListingCancelledEvent_nftAddress_tokenId_cancelTimestamp_key" ON "ListingCancelledEvent"("nftAddress", "tokenId", "cancelTimestamp");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_address_key" ON "User"("address");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Listing_nftAddress_tokenId_status_key" ON "Listing"("nftAddress", "tokenId", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Execution_lastBlockNumber_event_key" ON "Execution"("lastBlockNumber", "event");
 
 -- AddForeignKey
 ALTER TABLE "Listing" ADD CONSTRAINT "Listing_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

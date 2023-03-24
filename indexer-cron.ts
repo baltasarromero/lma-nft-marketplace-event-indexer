@@ -8,7 +8,7 @@ const indexerApp = require("./src/app");
 // Cron expression see https://www.npmjs.com/package/node-cron for details on cron configuration
 // Using a default config to run every 15 minutes in case the configuration is not set
 const cronExpression = process.env.JOB_EXECUTION_CRON || "*/4 * * * *";
-console.log("this is the configured expression", cronExpression);
+console.log(`Job configured with the following schedule ${cronExpression}`);
 const task = cron.schedule(cronExpression, indexerApp);
 
 task.start();

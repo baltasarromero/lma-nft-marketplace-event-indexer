@@ -4,7 +4,7 @@ const client = new PrismaClient();
 
 class ListingCancelledEventDataAccess {
 
-    async saveListingCancelledEvent(
+    async saveRawListingCancelledEvent(
         args: any,
         eventBlockNumber: number,
         transactionHash: string

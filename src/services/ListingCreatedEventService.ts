@@ -3,11 +3,14 @@ import { Event, EventFilter } from "@ethersproject/contracts";
 const { EventType } = require("@prisma/client");
 // Import data access
 // Execution
-const ExecutionDataAccess = require( "../data-access/ExecutionDataAccess" );
+const ExecutionDataAccess = require("../data-access/ExecutionDataAccess");
 const executionDataAccess = new ExecutionDataAccess();
 // ListingCreatedEvent
-const ListingCreatedEventDataAccess = require( "../data-access/ListingCreatedEventDataAccess" );
+const ListingCreatedEventDataAccess = require("../data-access/ListingCreatedEventDataAccess");
 const listingCreatedEventDataAccess = new ListingCreatedEventDataAccess();
+// Listing
+const ListingDataAccess = require("../data-access/ListingDataAccess");
+const listingDataAccess = new ListingDataAccess();
 
 class ListingCreatedEventService {
     /**
@@ -15,29 +18,69 @@ class ListingCreatedEventService {
      */
     constructor() {}
 
-    async getNewEvents() {
-        // Get start and current block to restrict the event filtering
-        const startBlock = (await executionDataAccess.getLatestExecutionBlock(EventType.LISTING_CREATED)) + 1;
-        const currentBlock = await ethereumConfig.provider.getBlockNumber();
+    async processEvent(listingCreatedEvent: Event) {
+        // Lookup the listing if it's not in the DB save it if it was marked as created ignore as this event
+        // was already processed if it's marked as cancelled but the creation data is missing we could update the listing
+    }
 
-        console.log(`Getting ListingCreated events from block: ${startBlock} to current block: ${currentBlock}`);
-
-        const newEvents = await this.getCreatedListingEvents(startBlock, currentBlock);
-
-        for (const listingCreatedEvent of newEvents) {
-            const eventBlockNumber = listingCreatedEvent.blockNumber;
-            const transactionHash = listingCreatedEvent.transactionHash;
-            await listingCreatedEventDataAccess.saveListingCreatedEvent(
+    async saveRawEventAndProcess(listingCreatedEvent: Event) {
+        const eventBlockNumber = listingCreatedEvent.blockNumber;
+        const transactionHash = listingCreatedEvent.transactionHash;
+        // Save raw event
+        const listingCreatedEventId: number =
+            await listingCreatedEventDataAccess.saveRawListingCreatedEvent(
                 listingCreatedEvent.args,
                 eventBlockNumber,
                 transactionHash
             );
-        }
-        
-        await executionDataAccess.saveExecution(currentBlock, EventType.LISTING_CREATED);
+
+        // Process  event and create/update listing state
+        await listingDataAccess.saveListing(
+            listingCreatedEventId,
+            listingCreatedEvent.args["nftAddress"],
+            listingCreatedEvent.args["tokenId"],
+            listingCreatedEvent.args["seller"],
+            listingCreatedEvent.args["price"],
+            listingCreatedEvent.args["listingTimestamp"],
+            listingCreatedEvent.blockNumber
+        );
     }
 
-    async getCreatedListingEvents(startBlock: number, currentBlock: number): Promise<Array<Event>> {
+    async getNewEvents() {
+        // Get start and current block to restrict the event filtering
+        const startBlock: number =
+            (await executionDataAccess.getLatestExecutionBlock(
+                EventType.LISTING_CREATED
+            )) + 1;
+        const currentBlock: number =
+            await ethereumConfig.provider.getBlockNumber();
+
+        console.log(
+            `Getting ListingCreated events from block: ${startBlock} to current block: ${currentBlock}`
+        );
+
+        const newEvents: Array<Event> = await this.getEventsFromBlockchain(
+            startBlock,
+            currentBlock
+        );
+
+        // Save and process all events
+        for (const listingCreatedEvent of newEvents) {
+            await this.saveRawEventAndProcess(listingCreatedEvent);
+        }
+
+        // Save the current execution with the currentBlock to allow resuming from this point on the next run
+        console.log("Saving execution");
+        await executionDataAccess.saveExecution(
+            currentBlock,
+            EventType.LISTING_CREATED
+        );
+    }
+
+    async getEventsFromBlockchain(
+        startBlock: number,
+        currentBlock: number
+    ): Promise<Array<Event>> {
         let listingCreatedEventFilter: EventFilter =
             ethereumConfig.nftContract.filters.ListingCreated();
 
@@ -45,7 +88,7 @@ class ListingCreatedEventService {
             listingCreatedEventFilter,
             startBlock,
             currentBlock
-        );              
+        );
     }
 }
 

@@ -21,18 +21,19 @@ class ListingCreatedEventService {
         const currentBlock = await ethereumConfig.provider.getBlockNumber();
 
         console.log(`Getting ListingCreated events from block: ${startBlock} to current block: ${currentBlock}`);
-        (await this.getCreatedListingEvents(startBlock, currentBlock)).forEach(
-            (listingCreatedEvent) => {
-                const eventBlockNumber = listingCreatedEvent.blockNumber;
-                const transactionHash = listingCreatedEvent.transactionHash;
-                listingCreatedEventDataAccess.saveListingCreatedEvent(
-                    listingCreatedEvent.args,
-                    eventBlockNumber,
-                    transactionHash
-                );
-            }
-        );
 
+        const newEvents = await this.getCreatedListingEvents(startBlock, currentBlock);
+
+        for (const listingCreatedEvent of newEvents) {
+            const eventBlockNumber = listingCreatedEvent.blockNumber;
+            const transactionHash = listingCreatedEvent.transactionHash;
+            await listingCreatedEventDataAccess.saveListingCreatedEvent(
+                listingCreatedEvent.args,
+                eventBlockNumber,
+                transactionHash
+            );
+        }
+        
         await executionDataAccess.saveExecution(currentBlock, EventType.LISTING_CREATED);
     }
 

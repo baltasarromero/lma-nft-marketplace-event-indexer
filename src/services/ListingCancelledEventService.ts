@@ -15,29 +15,20 @@ class ListingCancelledEventService {
      */
     constructor() {}
 
-    async getNewEvents() {
-        // Get start and current block to restrict the event filtering
-        const startBlock = (await executionDataAccess.getLatestExecutionBlock(EventType.LISTING_CANCELLED)) + 1;
-        const currentBlock = await ethereumConfig.provider.getBlockNumber();
 
-        console.log(`Getting ListingCancelled events from block: ${startBlock} to current block: ${currentBlock}`);
-        
-        (await this.getListingCancelledEvents(startBlock, currentBlock)).forEach(
-            (listingCancelledEvent) => {
-                const eventBlockNumber = listingCancelledEvent.blockNumber;
-                const transactionHash = listingCancelledEvent.transactionHash;
-                listingCancelledEventDataAccess.saveListingCancelledEvent(
-                    listingCancelledEvent.args,
-                    eventBlockNumber,
-                    transactionHash
-                );
-            }
-        );
-
-        await executionDataAccess.saveExecution(currentBlock, EventType.LISTING_CANCELLED);
+    async saveEventsToDB(events: Array<Event>) {
+        for await (const listingCancelledEvent of events) {
+            const eventBlockNumber = listingCancelledEvent.blockNumber;
+            const transactionHash = listingCancelledEvent.transactionHash;
+            listingCancelledEventDataAccess.saveListingCancelledEvent(
+                listingCancelledEvent.args,
+                eventBlockNumber,
+                transactionHash
+            );
+        }
     }
 
-    async getListingCancelledEvents(startBlock: number, currentBlock: number): Promise<Array<Event>> {
+    async getEventsFromBlockchain(startBlock: number, currentBlock: number): Promise<Array<Event>> {
         let listingCancelledEventFilter: EventFilter =
             ethereumConfig.nftContract.filters.ListingCancelled();
 
@@ -47,6 +38,30 @@ class ListingCancelledEventService {
             currentBlock
         );              
     }
+
+    async getNewEvents() {
+        // Get start and current block to restrict the event filtering
+        const startBlock = (await executionDataAccess.getLatestExecutionBlock(EventType.LISTING_CANCELLED)) + 1;
+        const currentBlock = await ethereumConfig.provider.getBlockNumber();
+
+        console.log(`Getting ListingCancelled events from block: ${startBlock} to current block: ${currentBlock}`);
+        
+        const newEvents = await this.getEventsFromBlockchain(startBlock, currentBlock)
+        
+        for (const listingCancelledEvent of newEvents) {
+            const eventBlockNumber = listingCancelledEvent.blockNumber;
+            const transactionHash = listingCancelledEvent.transactionHash;
+            await listingCancelledEventDataAccess.saveListingCancelledEvent(
+                listingCancelledEvent.args,
+                eventBlockNumber,
+                transactionHash
+            );
+        }
+    
+        await executionDataAccess.saveExecution(currentBlock, EventType.LISTING_CANCELLED);
+    }
+
+  
 }
 
 module.exports = ListingCancelledEventService;

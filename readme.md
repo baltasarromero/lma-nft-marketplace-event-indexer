@@ -3,6 +3,7 @@
 - [General info](#general-info)
 - [Technologies](#technologies)
 - [Setup](#setup)
+- [Pending](#pending)
 
 ## General info
 
@@ -30,33 +31,35 @@ Project is created with:
 To setup this project, clone the repo and then install the dependencies using using npm:
 
 ```
-
-$ cd ../lma-nft-marketplace-event-indexer
+$ cd ./lma-nft-marketplace-event-indexer
 $ npm install
+```
 
-## Dependencies
+### Dependencies
 Install a local database, this code was tested using Postgres SQL. So in order to run this Node Js application it wil be necessary to have a Postgres DB available could be locally (either via docker image or installed) or remote. The connection to the database is done through an environent variable. See next section for configuration.
 
 
-## Configuration
+### Configuration
 Create an .env file in the root directory of the project with the following key/values
 
-###Database Configurations
+### Database Configurations
 DATABASE_URL="postgresql://{USER_NAME}:{PASSWORD}@{HOST}:{PORT}/{DATABASE_NAME}?schema={SCHEMA_NAME}"
 
-###Blockchain Configurations
+### Blockchain Configurations
 ETHEREUM_NETWORK = {NETWORK-NAME} //The name of the network where the NFTMarketplace is deployed. NFT Marketplace is currently deployed  in sepolia
 INFURA_PROJECT_ID = {INFURA_PROJECT_ID} //Your Infura project ID
 NFT_MARKETPLACE_CONTRACT_ADDRESS = {NFT_MARKETPLACE_CONTRACT_ADDRESS}
 
-##Prisma
+### Prisma
 Once the database is available and the environment variable is properly set, run the following command in order to create the tables defined in 
 ./prisma/schema.prisma
-
+Run prisma migrations
+```
 $ npx prisma migrate --dev
-
+```
 ## Run the app
+```
 $ npm run start
-
-##Pending 
+```
+## Pending
 Implement logic to process raw events and reflect consolidated listing state in order to support queries from an API.

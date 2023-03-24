@@ -4,6 +4,7 @@
     "@types/node": "^18.15.5",
     "dotenv": "^16.0.3",
     "ethers": "^5.7.2",
+    "node-cron": "^3.0.2",
     "prisma": "^4.11.0"
   },
   "devDependencies": {
@@ -12,6 +13,6 @@
     "typescript": "^5.0.2"
   },
   "scripts": {
-    "start": "npx ts-node-esm ./src/app.ts"
+    "start-indexer-job": "npx ts-node-esm ./indexer-cron.ts"
   }
 }

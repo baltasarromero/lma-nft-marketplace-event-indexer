@@ -9,7 +9,9 @@ const listingCancelledEventServiceInstance = new ListingCancelledEventService();
 const PurchaseEventService = require("./services/PurchaseEventService");
 const purchaseEventServiceInstance = new PurchaseEventService();
 
-async function main() {
+module.exports = async function () {
+    console.log("Starting indexer job");
+
     await Promise.all([
         listingCreatedEventServiceInstance.getNewEvents(),
         listingCancelledEventServiceInstance.getNewEvents(),
@@ -17,6 +19,4 @@ async function main() {
     ]);
 
     console.log("Finished querying events for NFT Marketplace");
-}
-
-main();
+};

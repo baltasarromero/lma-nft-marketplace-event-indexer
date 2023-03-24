@@ -43,13 +43,19 @@ Install a local database, this code was tested using Postgres SQL. So in order t
 Create an .env file in the root directory of the project with the following key/values
 
 ### Database Configurations
+```
 DATABASE_URL="postgresql://{USER_NAME}:{PASSWORD}@{HOST}:{PORT}/{DATABASE_NAME}?schema={SCHEMA_NAME}"
-
+```
 ### Blockchain Configurations
+```
 ETHEREUM_NETWORK = {NETWORK-NAME} //The name of the network where the NFTMarketplace is deployed. NFT Marketplace is currently deployed  in sepolia
 INFURA_PROJECT_ID = {INFURA_PROJECT_ID} //Your Infura project ID
 NFT_MARKETPLACE_CONTRACT_ADDRESS = {NFT_MARKETPLACE_CONTRACT_ADDRESS}
-
+```
+### Scheduler Configuration
+```
+JOB_EXECUTION_CRON = * * * * * // this is an example that will run the job every minute for more details on cron expressions see https://www.npmjs.com/package/node-cron
+```
 ### Prisma
 Once the database is available and the environment variable is properly set, run the following command in order to create the tables defined in 
 ./prisma/schema.prisma
@@ -57,9 +63,10 @@ Run prisma migrations
 ```
 $ npx prisma migrate --dev
 ```
-## Run the app
+## How to start the indexer job
+The following command starts the indexer job which will run based on the configuration defined in the above mentioned var "JOB_EXECUTION_CRON"
 ```
-$ npm run start
+$ npm run start-indexer-job
 ```
 ## Pending
 Implement logic to process raw events and reflect consolidated listing state in order to support queries from an API.

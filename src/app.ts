@@ -1,41 +1,22 @@
-import dotenv from 'dotenv';
-dotenv.config();
+// Import services
+// ListingCreatedEvent
+const ListingCreatedEventService = require("./services/ListingCreatedEventService");
+const listingCreatedEventServiceInstance = new ListingCreatedEventService();
+// ListingCancelledEvent
+const ListingCancelledEventService = require("./services/ListingCancelledEventService");
+const listingCancelledEventServiceInstance = new ListingCancelledEventService();
+// PurchaseEvent
+const PurchaseEventService = require("./services/PurchaseEventService");
+const purchaseEventServiceInstance = new PurchaseEventService();
 
-const { ethers } = require("ethers");
-import { InfuraProvider } from "@ethersproject/providers";
-import { Contract, Event, EventFilter } from "@ethersproject/contracts";
-const NFTMarketplaceArtifact = require("../artifacts/NFTMarketplace.sol/NFTMarketplace.json");
+async function main() {
+    await Promise.all([
+        listingCreatedEventServiceInstance.getNewEvents(),
+        listingCancelledEventServiceInstance.getNewEvents(),
+        purchaseEventServiceInstance.getNewEvents(),
+    ]);
 
-
-let nftContract: Contract;
-let provider: InfuraProvider;
-
-function setup() {
-    // Configure provider
-    provider = new ethers.providers.InfuraProvider(
-        process.env.ETHEREUM_NETWORK,
-        process.env.INFURA_PROJECT_ID
-    );
-
-    // Configure contract
-    nftContract = new ethers.Contract(process.env.NFT_MARKETPLACE_CONTRACT_ADDRESS, NFTMarketplaceArtifact.abi, provider);
-}
-
-async function getCreatedListingEvents(): Promise<Array<Event>> {
-    console.log(`Getting the nft marketplace events events...`);
-    const currentBlock = await provider.getBlockNumber();
-
-    let listingCreatedEventFilter: EventFilter = nftContract.filters.ListingCreated();
-    let events: Array<Event>;
-    events = await nftContract.queryFilter(listingCreatedEventFilter, 0, currentBlock);
-  
-    return events;
-}
-
-
-async function main () {
-    setup();
-    console.log(await getCreatedListingEvents());
+    console.log("Finished querying events for NFT Marketplace");
 }
 
 main();

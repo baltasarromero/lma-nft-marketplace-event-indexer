@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Raw event data
+model ListingCreatedEvent {
+  id                Int      @id @default(autoincrement())
+  nftAddress        String   
+  tokenId           Decimal @db.Decimal(78,0)
+  seller            String
+  price             Decimal @db.Decimal(78,0)
+  listingTimestamp  DateTime
+  blockNumber       Decimal @db.Decimal(78,0)
+  transactionHash   String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  @@unique([nftAddress, tokenId, listingTimestamp])
+}
+
+model ListingCancelledEvent {
+  id                Int      @id @default(autoincrement())
+  nftAddress        String   
+  tokenId           Decimal @db.Decimal(78,0)
+  seller            String
+  cancelTimestamp   DateTime
+  blockNumber       Decimal @db.Decimal(78,0)
+  transactionHash   String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  @@unique([nftAddress, tokenId, cancelTimestamp])
+}
+
+model PurchaseEvent {
+  id                  Int      @id @default(autoincrement())
+  nftAddress          String   
+  tokenId             Decimal @db.Decimal(78,0)
+  seller              String
+  buyer               String
+  purchaseTimestamp   DateTime
+  blockNumber         Decimal @db.Decimal(78,0)
+  transactionHash     String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// Processed data
+model User {
+  id          Int       @id @default(autoincrement()) 
+  address     String
+  listings    Listing[] @relation("Listings")
+  purchases   Listing[] @relation("Purchases")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Listing {
+  id                Int      @id @default(autoincrement()) 
+  nftAddress        String
+  tokenId           Int
+  seller            User     @relation(name: "Listings", fields: [sellerId], references: [id])
+  sellerId          Int
+  buyer             User?    @relation(name: "Purchases",  fields: [buyerId], references: [id])
+  buyerId           Int?
+  price             Float
+  sold              Boolean  @default(false)
+  status            Status   @default(OPEN)
+  ListingStart      DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Latest block per event
+model Execution {
+  id                 Int   @id @default(autoincrement()) 
+  lastBlockNumber    Decimal @db.Decimal(78,0) 
+  event              EventType
+  createdAt          DateTime @default(now())
+  @@unique([lastBlockNumber, event])
+}
+
+enum Status {
+  OPEN
+  CANCELLED
+  CLOSED
+}
+
+enum EventType {
+  LISTING_CREATED
+  LISTING_CANCELLED
+  PURCHASE
+}

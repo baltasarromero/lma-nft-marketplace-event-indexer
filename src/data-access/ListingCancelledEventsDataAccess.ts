@@ -2,7 +2,7 @@
 const { PrismaClient, Prisma, EventType } = require("@prisma/client");
 const client = new PrismaClient();
 
-class ListingCancelledEventDataAccess {
+class ListingCancelledEventsDataAccess {
 
     async saveRawListingCancelledEvent(
         args: any,
@@ -37,4 +37,4 @@ class ListingCancelledEventDataAccess {
     }
 }
 
-module.exports = ListingCancelledEventDataAccess;
+module.exports = ListingCancelledEventsDataAccess;

@@ -3,16 +3,16 @@ import { Event, EventFilter } from "@ethersproject/contracts";
 const { EventType } = require("@prisma/client");
 // Import data access
 // Execution
-const ExecutionDataAccess = require("../data-access/ExecutionDataAccess");
-const executionDataAccess = new ExecutionDataAccess();
+const ExecutionsDataAccess = require("../data-access/ExecutionsDataAccess");
+const executionsDataAccess = new ExecutionsDataAccess();
 // ListingCreatedEvent
-const ListingCancelledEventDataAccess = require("../data-access/ListingCancelledEventDataAccess");
-const listingCancelledEventDataAccess = new ListingCancelledEventDataAccess();
+const ListingCancelledEventsDataAccess = require("../data-access/ListingCancelledEventsDataAccess");
+const listingCancelledEventsDataAccess = new ListingCancelledEventsDataAccess();
 // Listing
-const ListingDataAccess = require("../data-access/ListingDataAccess");
-const listingDataAccess = new ListingDataAccess();
+const ListingsDataAccess = require("../data-access/ListingsDataAccess");
+const listingsDataAccess = new ListingsDataAccess();
 
-class ListingCancelledEventService {
+class ListingCancelledEventsService {
     /**
      * @description Create an instance of PostService
      */
@@ -36,13 +36,13 @@ class ListingCancelledEventService {
         const eventBlockNumber = listingCancelledEvent.blockNumber;
         const transactionHash = listingCancelledEvent.transactionHash;
 
-        const listingCancelledEventId = await listingCancelledEventDataAccess.saveRawListingCancelledEvent(
+        const listingCancelledEventId = await listingCancelledEventsDataAccess.saveRawListingCancelledEvent(
             listingCancelledEvent.args,
             eventBlockNumber,
             transactionHash
         );
 
-        await listingDataAccess.cancelListing(
+        await listingsDataAccess.cancelListing(
             listingCancelledEventId,
             listingCancelledEvent.args["nftAddress"],
             listingCancelledEvent.args["tokenId"],
@@ -55,7 +55,7 @@ class ListingCancelledEventService {
     async getNewEvents() {
         // Get start and current block to restrict the event filtering
         const startBlock =
-            (await executionDataAccess.getLatestExecutionBlock(
+            (await executionsDataAccess.getLatestExecutionBlock(
                 EventType.LISTING_CANCELLED
             )) + 1;
         const currentBlock = await ethereumConfig.provider.getBlockNumber();
@@ -74,11 +74,11 @@ class ListingCancelledEventService {
             await this.saveRawEventAndProcess(listingCancelled);
         }
 
-        await executionDataAccess.saveExecution(
+        await executionsDataAccess.saveExecution(
             currentBlock,
             EventType.LISTING_CANCELLED
         );
     }
 }
 
-module.exports = ListingCancelledEventService;
+module.exports = ListingCancelledEventsService;

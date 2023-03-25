@@ -5,7 +5,7 @@ const client = new PrismaClient();
 import { BigNumber } from "ethers";
 
 
-class ListingCreatedEventDataAccess {
+class ListingCreatedEventsDataAccess {
 
     async saveRawListingCreatedEvent(
         args: Map<string, any>,
@@ -43,4 +43,4 @@ class ListingCreatedEventDataAccess {
     }
 }
 
-module.exports = ListingCreatedEventDataAccess;
+module.exports = ListingCreatedEventsDataAccess;

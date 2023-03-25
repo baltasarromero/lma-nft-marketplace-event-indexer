@@ -1,24 +1,15 @@
-// Import services
-// ListingCreatedEvent
-const ListingCreatedEventService = require("./services/ListingCreatedEventService");
-const listingCreatedEventServiceInstance = new ListingCreatedEventService();
-// ListingCancelledEvent
-const ListingCancelledEventService = require("./services/ListingCancelledEventService");
-const listingCancelledEventServiceInstance = new ListingCancelledEventService();
-// PurchaseEvent
-const PurchaseEventService = require("./services/PurchaseEventService");
-const purchaseEventServiceInstance = new PurchaseEventService();
+const express = require("express");
+const app = express();
 
-module.exports = async function () {
-    console.log("Starting indexer job");
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-    // We force the order of event processing to simplify the logic to consolidate data
-    await listingCreatedEventServiceInstance.getNewEvents();
-    console.log("Done processed created events");
-    await listingCancelledEventServiceInstance.getNewEvents();
-    console.log("Done processed cancelled events");
-    await purchaseEventServiceInstance.getNewEvents();
-    console.log("Done processed purchase events");
+const routes = require('./routes/routes');
+app.use('/api', routes)
 
-    console.log("Finished querying events for NFT Marketplace");
-};
+var server = app.listen(8081, function () {
+    var host = server.address().address;
+    var port = server.address().port;
+
+    console.log("NFT Marketplace API listening at http://%s:%s", host, port);
+});

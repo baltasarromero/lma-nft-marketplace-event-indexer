@@ -3,16 +3,16 @@ import { Event, EventFilter } from "@ethersproject/contracts";
 const { EventType } = require("@prisma/client");
 // Import data access
 // Execution
-const ExecutionDataAccess = require("../data-access/ExecutionDataAccess");
-const executionDataAccess = new ExecutionDataAccess();
+const ExecutionsDataAccess = require("../data-access/ExecutionsDataAccess");
+const executionsDataAccess = new ExecutionsDataAccess();
 // ListingCreatedEvent
-const ListingCreatedEventDataAccess = require("../data-access/ListingCreatedEventDataAccess");
-const listingCreatedEventDataAccess = new ListingCreatedEventDataAccess();
+const ListingCreatedEventsDataAccess = require("../data-access/ListingCreatedEventsDataAccess");
+const listingCreatedEventsDataAccess = new ListingCreatedEventsDataAccess();
 // Listing
-const ListingDataAccess = require("../data-access/ListingDataAccess");
-const listingDataAccess = new ListingDataAccess();
+const ListingsDataAccess = require("../data-access/ListingsDataAccess");
+const listingsDataAccess = new ListingsDataAccess();
 
-class ListingCreatedEventService {
+class ListingCreatedEventsService {
     /**
      * @description Create an instance of PostService
      */
@@ -28,14 +28,14 @@ class ListingCreatedEventService {
         const transactionHash = listingCreatedEvent.transactionHash;
         // Save raw event
         const listingCreatedEventId: number =
-            await listingCreatedEventDataAccess.saveRawListingCreatedEvent(
+            await listingCreatedEventsDataAccess.saveRawListingCreatedEvent(
                 listingCreatedEvent.args,
                 eventBlockNumber,
                 transactionHash
             );
 
         // Process  event and create/update listing state
-        await listingDataAccess.saveListing(
+        await listingsDataAccess.saveListing(
             listingCreatedEventId,
             listingCreatedEvent.args["nftAddress"],
             listingCreatedEvent.args["tokenId"],
@@ -49,7 +49,7 @@ class ListingCreatedEventService {
     async getNewEvents() {
         // Get start and current block to restrict the event filtering
         const startBlock: number =
-            (await executionDataAccess.getLatestExecutionBlock(
+            (await executionsDataAccess.getLatestExecutionBlock(
                 EventType.LISTING_CREATED
             )) + 1;
         const currentBlock: number =
@@ -71,7 +71,7 @@ class ListingCreatedEventService {
 
         // Save the current execution with the currentBlock to allow resuming from this point on the next run
         console.log("Saving execution");
-        await executionDataAccess.saveExecution(
+        await executionsDataAccess.saveExecution(
             currentBlock,
             EventType.LISTING_CREATED
         );
@@ -92,4 +92,4 @@ class ListingCreatedEventService {
     }
 }
 
-module.exports = ListingCreatedEventService;
+module.exports = ListingCreatedEventsService;

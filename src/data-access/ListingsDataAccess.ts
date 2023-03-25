@@ -2,10 +2,10 @@
 const { PrismaClient, Prisma } = require("@prisma/client");
 const client = new PrismaClient();
 
-import { Status } from "@prisma/client";
+import { Status, Listing } from "@prisma/client";
 import { BigNumber } from "ethers";
 
-class ListingDataAccess {
+class ListingsDataAccess {
     async saveListing(
         listingCreatedEventId: number,
         nftAddress: string,
@@ -31,9 +31,7 @@ class ListingDataAccess {
                         },
                     },
                     price: price.toString(),
-                    listedAt: new Date(
-                        listingTimestamp.toString() * 1000
-                    ),
+                    listedAt: new Date(listingTimestamp.toString() * 1000),
                     listedBlockNumber: listingBlockNumber.toString(),
                 },
             });
@@ -66,14 +64,12 @@ class ListingDataAccess {
                     nftAddress_tokenId_status: {
                         nftAddress: nftAddress,
                         tokenId: tokenId.toString(),
-                        status: Status.OPEN // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
-                    }    
+                        status: Status.OPEN, // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
+                    },
                 },
                 data: {
                     status: Status.CANCELLED,
-                    cancelledAt: new Date(
-                        cancelTimestamp.toString() * 1000
-                    ),
+                    cancelledAt: new Date(cancelTimestamp.toString() * 1000),
                     cancelledBlockNumber: cancelBlockNumber.toString(),
                 },
             });
@@ -82,9 +78,9 @@ class ListingDataAccess {
             console.log(e);
             if (e instanceof Prisma.RecordNotFound) {
                 //if (e.code === "P2002") {
-                    console.log(
-                        `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress}, tokenId: ${tokenId}. You should review CancelledListingEvent with id: ${listingCancelledEventId}`
-                    );
+                console.log(
+                    `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress}, tokenId: ${tokenId}. You should review CancelledListingEvent with id: ${listingCancelledEventId}`
+                );
                 //}
             } else {
                 throw e;
@@ -108,8 +104,8 @@ class ListingDataAccess {
                     nftAddress_tokenId_status: {
                         nftAddress: nftAddress,
                         tokenId: tokenId.toString(),
-                        status: Status.OPEN // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
-                    }    
+                        status: Status.OPEN, // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
+                    },
                 },
                 data: {
                     status: Status.PURCHASED,
@@ -124,9 +120,7 @@ class ListingDataAccess {
                         },
                     },
                     sold: true,
-                    purchasedAt: new Date(
-                        purchaseTimestamp.toString() * 1000
-                    ),
+                    purchasedAt: new Date(purchaseTimestamp.toString() * 1000),
                     purchasedBlockNumber: purchaseBlockNumber.toString(),
                 },
             });
@@ -135,15 +129,43 @@ class ListingDataAccess {
             console.log(e);
             if (e instanceof Prisma.RecordNotFound) {
                 //if (e.code === "P2002") {
-                    console.log(
-                        `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress}, tokenId: ${tokenId}. You should review PurchaseEvent with id: ${listingPurchasedEventId}`
-                    );
+                console.log(
+                    `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress}, tokenId: ${tokenId}. You should review PurchaseEvent with id: ${listingPurchasedEventId}`
+                );
                 //}
             } else {
                 throw e;
             }
         }
     }
+
+    async getActiveListingsByCollection(
+        collectionAddress: string
+    ): Promise<Listing[]> {
+        try {
+            return await client.listing.findMany({
+                where: {
+                    status: Status.OPEN,
+                    nftAddress: collectionAddress,
+                },
+                select: {
+                    id: true,
+                    nftAddress: true,
+                    tokenId: true,
+                    seller: {
+                        select: {
+                            address: true,
+                        },
+                    },
+                    price: true,
+                    listedAt: true,
+                },
+            });
+        } catch (e) {
+            console.log(e);
+            throw e;
+        }
+    }
 }
 
-module.exports = ListingDataAccess;
+module.exports = ListingsDataAccess;

@@ -2,7 +2,7 @@
 const { PrismaClient, Prisma } = require("@prisma/client");
 const client = new PrismaClient();
 
-class PurchaseEventDataAccess {
+class PurchaseEventsDataAccess {
 
     async savePurchaseEvent(
         args: any,
@@ -38,4 +38,4 @@ class PurchaseEventDataAccess {
     }
 }
 
-module.exports = PurchaseEventDataAccess;
+module.exports = PurchaseEventsDataAccess;

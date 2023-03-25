@@ -3,14 +3,14 @@ import { Event, EventFilter } from "@ethersproject/contracts";
 const { EventType } = require("@prisma/client");
 // Import data access
 // Execution
-const ExecutionDataAccess = require("../data-access/ExecutionDataAccess");
-const executionDataAccess = new ExecutionDataAccess();
+const ExecutionsDataAccess = require("../data-access/ExecutionsDataAccess");
+const executionsDataAccess = new ExecutionsDataAccess();
 // ListingCreatedEvent
-const PurchaseEventDataAccess = require("../data-access/PurchaseEventDataAccess");
-const purchaseEventDataAccess = new PurchaseEventDataAccess();
+const PurchaseEventsDataAccess = require("../data-access/PurchaseEventsDataAccess");
+const purchaseEventsDataAccess = new PurchaseEventsDataAccess();
 // Listing
-const ListingDataAccess = require("../data-access/ListingDataAccess");
-const listingDataAccess = new ListingDataAccess();
+const ListingsDataAccess = require("../data-access/ListingsDataAccess");
+const listingsDataAccess = new ListingsDataAccess();
 
 class PurchaseEventService {
     /**
@@ -36,13 +36,13 @@ class PurchaseEventService {
         const eventBlockNumber = purchaseEvent.blockNumber;
         const transactionHash = purchaseEvent.transactionHash;
 
-        const purchaseEventId = await purchaseEventDataAccess.savePurchaseEvent(
+        const purchaseEventId = await purchaseEventsDataAccess.savePurchaseEvent(
             purchaseEvent.args,
             eventBlockNumber,
             transactionHash
         );
 
-        await listingDataAccess.purchaseListing(
+        await listingsDataAccess.purchaseListing(
             purchaseEventId,
             purchaseEvent.args["nftAddress"],
             purchaseEvent.args["tokenId"],
@@ -56,7 +56,7 @@ class PurchaseEventService {
     async getNewEvents() {
         // Get start and current block to restrict the event filtering
         const startBlock =
-            (await executionDataAccess.getLatestExecutionBlock(
+            (await executionsDataAccess.getLatestExecutionBlock(
                 EventType.PURCHASE
             )) + 1;
         const currentBlock = await ethereumConfig.provider.getBlockNumber();
@@ -70,7 +70,7 @@ class PurchaseEventService {
            await this.saveRawEventAndProcess(purchaseEvent);
         }
     
-        await executionDataAccess.saveExecution(
+        await executionsDataAccess.saveExecution(
             currentBlock,
             EventType.PURCHASE
         );

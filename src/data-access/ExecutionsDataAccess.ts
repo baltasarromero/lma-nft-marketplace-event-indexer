@@ -2,7 +2,7 @@
 const { PrismaClient, Prisma, EventType } = require("@prisma/client");
 const client = new PrismaClient();
 
-class ExecutionDataAccess {
+class ExecutionsDataAccess {
 
     async saveExecution(currentBlock: number, eventType: number) {
         // Save the current execution
@@ -44,4 +44,4 @@ class ExecutionDataAccess {
     }
 }
 
-module.exports = ExecutionDataAccess;
+module.exports = ExecutionsDataAccess;

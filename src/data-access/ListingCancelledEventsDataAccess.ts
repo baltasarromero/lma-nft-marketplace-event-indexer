@@ -1,6 +1,8 @@
 //Data Access Layer
-const { PrismaClient, Prisma, EventType } = require("@prisma/client");
+const { PrismaClient, Prisma } = require("@prisma/client");
 const client = new PrismaClient();
+
+import  { ListingCancelledEvent } from "@prisma/client";
 
 class ListingCancelledEventsDataAccess {
 
@@ -8,9 +10,9 @@ class ListingCancelledEventsDataAccess {
         args: any,
         eventBlockNumber: number,
         transactionHash: string
-    ) {
+    ) : Promise<Number> {
         try {
-            await client.listingCancelledEvent.create({
+            const listingCancelledEvent: ListingCancelledEvent = await client.listingCancelledEvent.create({
                 data: {
                     nftAddress: args["nftAddress"],
                     tokenId: parseInt(args["tokenId"].toString()),
@@ -23,6 +25,7 @@ class ListingCancelledEventsDataAccess {
                 },
             });
             console.log("Saved new ListingCancelledEvent");
+            return listingCancelledEvent.id;
         } catch (e) {
             if (e instanceof Prisma.PrismaClientKnownRequestError) {
                 if (e.code === "P2002") {

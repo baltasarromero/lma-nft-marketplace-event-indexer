@@ -5,7 +5,113 @@ const client = new PrismaClient();
 import { Status, Listing } from "@prisma/client";
 import { BigNumber } from "ethers";
 
+interface ITest {
+    readonly foo: number;
+}
+
 class ListingsDataAccess {
+    // Helper function to generate dynamic where clause
+    // We need specific logic for the buyerAddress param because it's a nested relationship, all parameter that are nested relationship
+    // will require similar treatment. The rest of the parameters can be added to the where clause directly 
+    generateWhereClause(filters: Map<String, any>) : Object {
+        let where = {};
+
+       for (let [key, value] of Object.entries(filters)) {
+          if(key === "buyerAddress") {
+            where["buyer"] = {
+                address : value
+            }
+          } else {
+            where[key] = value;
+          }  
+        }
+      
+        return where;
+    }
+
+    // Helper function to dynamically add attributes to select clause based on the requested Listing status
+    // Depending on the status requested more fields will be added to the select clause. i.e. if CANCELLED status
+    // is requested the cancelledAt field will be added if PURCHASED status is requested the purchasedAt and buyer fields will be
+    // added to the select clause. In case  no specific status is used for filtering all related fields will be included 
+    generateSelectClause(status: string) : Object {
+        let select = {
+            id: true,
+            nftAddress: true,
+            tokenId: true,
+            seller: {
+                select: {
+                    id: true, 
+                    address: true,
+                },
+            },
+            price: true,
+            listedAt: true,
+            ...((status == null || status == "PURCHASED")? { buyer: {
+                select: { id: true, address: true,}}, purchasedAt: true} : {}),
+            ...((status == null || status == "CANCELLED") ? { cancelledAt: true} : {}),
+        };
+      
+        return select;
+    }
+    
+    // Read
+    async getListingById(id: number): Promise<Listing> {
+        try {
+            return await client.listing.findUnique({
+                where: {
+                    id: id,
+                },
+                select: {
+                    id: true,
+                    nftAddress: true,
+                    tokenId: true,
+                    seller: {
+                        select: {
+                            id: true,
+                            address: true,
+                        },
+                    },
+                    buyer: {
+                        select: {
+                            id: true,
+                            address: true,
+                        },
+                    },
+                    price: true,
+                    sold: true,
+                    status: true,
+                    listedAt: true,
+                    listedBlockNumber: true,
+                    cancelledAt: true,
+                    cancelledBlockNumber: true,
+                    purchasedAt: true,
+                    purchasedBlockNumber: true,
+                },
+            });
+        } catch (e) {
+            console.log(e);
+            throw e;
+        }
+    }
+
+    async searchListings(
+        queryParams: Map<String, any>
+    ): Promise<Listing[]> {
+        try {
+            const where = this.generateWhereClause(queryParams);
+            const select = this.generateSelectClause(queryParams["status"]);
+
+            return await client.listing.findMany({
+                where,
+                select               
+            });
+        } catch (e) {
+            console.log(e);
+            throw e;
+        }
+    }
+
+    // Write
     async saveListing(
         listingCreatedEventId: number,
         nftAddress: string,
@@ -44,11 +150,13 @@ class ListingsDataAccess {
                     );
                 }
             } else {
+                console.log(e);
                 throw e;
             }
         }
     }
 
+    // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
     async cancelListing(
         listingCancelledEventId: number,
         nftAddress: string,
@@ -64,7 +172,7 @@ class ListingsDataAccess {
                     nftAddress_tokenId_status: {
                         nftAddress: nftAddress,
                         tokenId: tokenId.toString(),
-                        status: Status.OPEN, // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
+                        status: Status.OPEN, 
                     },
                 },
                 data: {
@@ -75,19 +183,20 @@ class ListingsDataAccess {
             });
             console.log("Processed Listing Cancellation");
         } catch (e) {
-            console.log(e);
-            if (e instanceof Prisma.RecordNotFound) {
-                //if (e.code === "P2002") {
-                console.log(
-                    `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress}, tokenId: ${tokenId}. You should review CancelledListingEvent with id: ${listingCancelledEventId}`
-                );
-                //}
+            if (e instanceof Prisma.PrismaClientKnownRequestError) {
+                if (e.code === "P2025") {
+                    console.log(
+                        `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress} and tokenId: ${tokenId}. You should review CancelledListingEvent with id: ${listingCancelledEventId}`
+                    );
+                }    
             } else {
+                console.log(e);                
                 throw e;
             }
         }
     }
 
+    // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
     async purchaseListing(
         listingPurchasedEventId: number,
         nftAddress: string,
@@ -97,14 +206,12 @@ class ListingsDataAccess {
         purchaseBlockNumber: BigNumber
     ) {
         try {
-            console.log("Purchase listing");
-
             await client.listing.update({
                 where: {
                     nftAddress_tokenId_status: {
                         nftAddress: nftAddress,
                         tokenId: tokenId.toString(),
-                        status: Status.OPEN, // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
+                        status: Status.OPEN, 
                     },
                 },
                 data: {
@@ -125,45 +232,17 @@ class ListingsDataAccess {
                 },
             });
             console.log("Processed Listing Purchase");
-        } catch (e) {
-            console.log(e);
-            if (e instanceof Prisma.RecordNotFound) {
-                //if (e.code === "P2002") {
-                console.log(
-                    `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress}, tokenId: ${tokenId}. You should review PurchaseEvent with id: ${listingPurchasedEventId}`
-                );
-                //}
+        } catch (e) {            
+            if (e instanceof Prisma.PrismaClientKnownRequestError) {
+                if (e.code === "P2025") {
+                    console.log(
+                        `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress} and tokenId: ${tokenId}. You should review PurchaseEvent with id: ${listingPurchasedEventId}`
+                    );
+                }
             } else {
+                console.log(e);
                 throw e;
             }
-        }
-    }
-
-    async getActiveListingsByCollection(
-        collectionAddress: string
-    ): Promise<Listing[]> {
-        try {
-            return await client.listing.findMany({
-                where: {
-                    status: Status.OPEN,
-                    nftAddress: collectionAddress,
-                },
-                select: {
-                    id: true,
-                    nftAddress: true,
-                    tokenId: true,
-                    seller: {
-                        select: {
-                            address: true,
-                        },
-                    },
-                    price: true,
-                    listedAt: true,
-                },
-            });
-        } catch (e) {
-            console.log(e);
-            throw e;
         }
     }
 }

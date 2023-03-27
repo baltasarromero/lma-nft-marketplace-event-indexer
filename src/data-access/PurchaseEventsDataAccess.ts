@@ -2,15 +2,16 @@
 const { PrismaClient, Prisma } = require("@prisma/client");
 const client = new PrismaClient();
 
+import { PurchaseEvent } from "@prisma/client";
 class PurchaseEventsDataAccess {
 
     async savePurchaseEvent(
         args: any,
         eventBlockNumber: number,
         transactionHash: string
-    ) {
+    ) : Promise<Number> {
         try {
-            await client.purchaseEvent.create({
+            const purchaseEvent: PurchaseEvent = await client.purchaseEvent.create({
                 data: {
                     nftAddress: args["nftAddress"],
                     tokenId: parseInt(args["tokenId"].toString()),
@@ -24,6 +25,7 @@ class PurchaseEventsDataAccess {
                 },
             });
             console.log("Saved new PurchaseEvent");
+            return purchaseEvent.id;
         } catch (e) {
             if (e instanceof Prisma.PrismaClientKnownRequestError) {
                 if (e.code === "P2002") {

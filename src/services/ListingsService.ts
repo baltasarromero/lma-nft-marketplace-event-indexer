@@ -11,8 +11,12 @@ class ListingsService {
      */
     constructor() {}
 
-    async getActiveListingsByCollection(collectionAddress: string): Promise<Listing[]> {
-        return await listingsDataAccess.getActiveListingsByCollection(collectionAddress);
+    async getListingById(id: number) : Promise<Listing> {
+        return await listingsDataAccess.getListingById(id);
+    }
+
+    async searchListings(queryParams: Map<String, any>) : Promise<Listing[]> {
+        return await listingsDataAccess.searchListings(queryParams);
     }
 }
 

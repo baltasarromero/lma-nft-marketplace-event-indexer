@@ -17,12 +17,23 @@ class ListingsDataAccess {
         let where = {};
 
        for (let [key, value] of Object.entries(filters)) {
-          if(key === "buyerAddress") {
-            where["buyer"] = {
-                address : value
-            }
-          } else {
-            where[key] = value;
+            switch (key) {
+                case "buyerAddress": {
+                    where["buyer"] = {
+                        address : value
+                    };
+                    break;
+                }    
+                case "sellerAddress": {
+                        where["seller"] = {
+                            address : value
+                        };
+                        break;
+                }        
+                default: {
+                    where[key] = value;
+                    break;
+                }    
           }  
         }
       

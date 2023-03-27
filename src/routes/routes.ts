@@ -53,6 +53,7 @@ router.get(
     "/listings",
     query("nftAddress").optional().isString().custom(isValidAddress),
     query("buyerAddress").optional().isString().custom(isValidAddress),
+    query("sellerAddress").optional().isString().custom(isValidAddress),
     query("status").optional().isString().toUpperCase().isIn(indexerAPIConfig.validStatus),
     (req, res) => {
         // Check if there are any validation errors

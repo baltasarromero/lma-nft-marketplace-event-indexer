@@ -65,4 +65,19 @@ router.get(
     }
 );
 
+
+router.get(
+    "/collections/stats",
+    query("nftAddress").notEmpty().isString().custom(isValidAddress),
+    (req, res) => {
+        // Check if there are any validation errors
+        const errors: Result<ValidationError> = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json(errors);
+        }
+        listingsController.getCollectionStats(req, res);
+    }
+);
+
+
 module.exports = router;

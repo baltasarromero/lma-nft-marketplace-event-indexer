@@ -12,6 +12,7 @@ const SEARCH_LISTINGS_500_ERROR = "An error ocurred while searching listings";
 const LISTING_BY_ID_500_ERROR =
     "An error ocurred while trying to get the requested listing";
 const LISTING_NOT_FOUND = "Listing not found";
+const COLLECTION_STATS_500_ERROR = "An error occurred while trying to retrieve collection stats";
 class ListingController {
     /**
      * @description Create an instance of PostService
@@ -54,6 +55,17 @@ class ListingController {
         } catch (e) {
             // An error ocurred so we return an 500 HTTP code
             res.status(500).send(SEARCH_LISTINGS_500_ERROR);
+        }
+    }
+
+    async getCollectionStats(req, res) {
+        try {
+            res.status(200).send(
+                await listingsService.getCollectionStats(req.query.nftAddress)
+            );
+        } catch (e) {
+            // An error ocurred so we return an 500 HTTP code
+            res.status(500).send(COLLECTION_STATS_500_ERROR);
         }
     }
 }

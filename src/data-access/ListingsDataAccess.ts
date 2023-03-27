@@ -3,6 +3,7 @@ const { PrismaClient, Prisma } = require("@prisma/client");
 const client = new PrismaClient();
 
 import { Status, Listing } from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/index";
 import { BigNumber } from "ethers";
 
 interface ITest {
@@ -12,59 +13,67 @@ interface ITest {
 class ListingsDataAccess {
     // Helper function to generate dynamic where clause
     // We need specific logic for the buyerAddress param because it's a nested relationship, all parameter that are nested relationship
-    // will require similar treatment. The rest of the parameters can be added to the where clause directly 
-    generateWhereClause(filters: Map<String, any>) : Object {
+    // will require similar treatment. The rest of the parameters can be added to the where clause directly
+    generateWhereClause(filters: Map<String, any>): Object {
         let where = {};
 
-       for (let [key, value] of Object.entries(filters)) {
+        for (let [key, value] of Object.entries(filters)) {
             switch (key) {
                 case "buyerAddress": {
                     where["buyer"] = {
-                        address : value
+                        address: value,
                     };
                     break;
-                }    
+                }
                 case "sellerAddress": {
-                        where["seller"] = {
-                            address : value
-                        };
-                        break;
-                }        
+                    where["seller"] = {
+                        address: value,
+                    };
+                    break;
+                }
                 default: {
                     where[key] = value;
                     break;
-                }    
-          }  
+                }
+            }
         }
-      
+
         return where;
     }
 
     // Helper function to dynamically add attributes to select clause based on the requested Listing status
     // Depending on the status requested more fields will be added to the select clause. i.e. if CANCELLED status
     // is requested the cancelledAt field will be added if PURCHASED status is requested the purchasedAt and buyer fields will be
-    // added to the select clause. In case  no specific status is used for filtering all related fields will be included 
-    generateSelectClause(status: string) : Object {
+    // added to the select clause. In case  no specific status is used for filtering all related fields will be included
+    generateSelectClause(status: string): Object {
         let select = {
             id: true,
             nftAddress: true,
             tokenId: true,
             seller: {
                 select: {
-                    id: true, 
+                    id: true,
                     address: true,
                 },
             },
             price: true,
             listedAt: true,
-            ...((status == null || status == "PURCHASED")? { buyer: {
-                select: { id: true, address: true,}}, purchasedAt: true} : {}),
-            ...((status == null || status == "CANCELLED") ? { cancelledAt: true} : {}),
+            ...(status == null || status == "PURCHASED"
+                ? {
+                      buyer: {
+                          select: { id: true, address: true },
+                      },
+                      purchasedAt: true,
+                  }
+                : {}),
+            ...(status == null || status == "CANCELLED"
+                ? { cancelledAt: true }
+                : {}),
         };
-      
+
         return select;
     }
-    
+
     // Read
     async getListingById(id: number): Promise<Listing> {
         try {
@@ -105,17 +114,63 @@ class ListingsDataAccess {
         }
     }
 
-    async searchListings(
-        queryParams: Map<String, any>
-    ): Promise<Listing[]> {
+    async searchListings(queryParams: Map<String, any>): Promise<Listing[]> {
         try {
             const where = this.generateWhereClause(queryParams);
             const select = this.generateSelectClause(queryParams["status"]);
 
             return await client.listing.findMany({
                 where,
-                select               
+                select,
             });
+        } catch (e) {
+            console.log(e);
+            throw e;
+        }
+    }
+
+    async getFloorPrice(collectionAddress: string): Promise<Decimal> {
+        let floorPriceStat: Object[];
+
+        try {
+            // Floor price
+            floorPriceStat = await client.listing.groupBy({
+                by: ["nftAddress"],
+                where: {
+                    nftAddress: collectionAddress,
+                    status: Status.OPEN,
+                },
+                _min: {
+                    price: true,
+                },
+            });
+
+            // Given we are grouping by nftAddress the result of the query only has  one record
+            return floorPriceStat[0]? floorPriceStat[0]["_min"]["price"] : 0;
+        } catch (e) {
+            console.log(e);
+            throw e;
+        }
+    }
+
+    async getTradedVolume(collectionAddress: string): Promise<Decimal> {
+        let tradedVolumeStat: Object[];
+
+        try {
+            // Traded Volume
+            tradedVolumeStat = await client.listing.groupBy({
+                by: ["nftAddress"],
+                where: {
+                    nftAddress: collectionAddress,
+                    status: Status.PURCHASED,
+                },
+                _sum: {
+                    price: true,
+                }
+            });
+
+            // Given we are grouping by nftAddress the result of the query only has  one record
+            return tradedVolumeStat[0]? tradedVolumeStat[0]["_sum"]["price"] : 0;
         } catch (e) {
             console.log(e);
             throw e;
@@ -183,7 +238,7 @@ class ListingsDataAccess {
                     nftAddress_tokenId_status: {
                         nftAddress: nftAddress,
                         tokenId: tokenId.toString(),
-                        status: Status.OPEN, 
+                        status: Status.OPEN,
                     },
                 },
                 data: {
@@ -199,9 +254,9 @@ class ListingsDataAccess {
                     console.log(
                         `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress} and tokenId: ${tokenId}. You should review CancelledListingEvent with id: ${listingCancelledEventId}`
                     );
-                }    
+                }
             } else {
-                console.log(e);                
+                console.log(e);
                 throw e;
             }
         }
@@ -222,7 +277,7 @@ class ListingsDataAccess {
                     nftAddress_tokenId_status: {
                         nftAddress: nftAddress,
                         tokenId: tokenId.toString(),
-                        status: Status.OPEN, 
+                        status: Status.OPEN,
                     },
                 },
                 data: {
@@ -243,7 +298,7 @@ class ListingsDataAccess {
                 },
             });
             console.log("Processed Listing Purchase");
-        } catch (e) {            
+        } catch (e) {
             if (e instanceof Prisma.PrismaClientKnownRequestError) {
                 if (e.code === "P2025") {
                     console.log(

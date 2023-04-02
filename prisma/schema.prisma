@@ -148,11 +148,11 @@ model NFTOffer {
   offerCreatedBlockNumber   Decimal @db.Decimal(78,0)
   cancelledAt               DateTime?
   cancelledBlockNumber      Decimal? @db.Decimal(78,0)
-  acceptedAt               DateTime? 
+  acceptedAt                DateTime? 
   acceptedBlockNumber       Decimal? @db.Decimal(78,0)
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
-  @@unique([nftAddress, tokenId, buyerId, status])
+  @@unique([nftAddress, tokenId, buyerId, offerCreatedAt])
 }
 
 

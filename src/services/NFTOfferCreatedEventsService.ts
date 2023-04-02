@@ -37,8 +37,6 @@ class NFTOfferCreatedEventsService {
                 eventBlockNumber,
                 transactionHash
             );
-       
-        console.log();
                 
         // Process  event and create/update offer state
         await nftOffersDataAccess.saveNFTOffer(
@@ -59,6 +57,7 @@ class NFTOfferCreatedEventsService {
             (await executionsDataAccess.getLatestExecutionBlock(
                 EventType.OFFER_CREATED
             )) + 1;
+
         const currentBlock: number =
             await ethereumConfig.provider.getBlockNumber();
 
@@ -88,20 +87,15 @@ class NFTOfferCreatedEventsService {
         startBlock: number,
         currentBlock: number
     ): Promise<Array<Event>> {
-        try {
-            let nftOfferCreatedEventFilter: EventFilter =
-            ethereumConfig.nftContract.filters.NewNFTOffer();
+        let nftOfferCreatedEventFilter: EventFilter =
+        ethereumConfig.nftContract.filters.NewNFTOffer();
 
-            return ethereumConfig.nftContract.queryFilter(
-                nftOfferCreatedEventFilter,
-                startBlock,
-                currentBlock
-            );
-        } catch (error) {
-            console.log(error);
-            return;
-        }   
-    }
+        return ethereumConfig.nftContract.queryFilter(
+            nftOfferCreatedEventFilter,
+            startBlock,
+            currentBlock
+        );
+     }
 }
 
 module.exports = NFTOfferCreatedEventsService;

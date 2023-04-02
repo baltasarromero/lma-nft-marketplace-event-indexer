@@ -2,44 +2,25 @@
 const { PrismaClient, Prisma } = require("@prisma/client");
 const client = new PrismaClient();
 
-import { OfferStatus, Listing } from "@prisma/client";
+import { OfferStatus, NFTOffer } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/index";
 import { BigNumber } from "ethers";
 
 class NFTOfferDataAccess {
     // Helper function to generate dynamic where clause
-    // We need specific logic for the buyerAddress param because it's a nested relationship, all parameter that are nested relationship
-    // will require similar treatment. The rest of the parameters can be added to the where clause directly
     generateWhereClause(filters: Map<String, any>): Object {
         let where = {};
 
         for (let [key, value] of Object.entries(filters)) {
-            switch (key) {
-                case "buyerAddress": {
-                    where["buyer"] = {
-                        address: value,
-                    };
-                    break;
-                }
-                case "sellerAddress": {
-                    where["seller"] = {
-                        address: value,
-                    };
-                    break;
-                }
-                default: {
-                    where[key] = value;
-                    break;
-                }
-            }
+            where[key] = value;
         }
 
         return where;
     }
 
-    // Helper function to dynamically add attributes to select clause based on the requested Listing status
+    // Helper function to dynamically add attributes to select clause based on the requested NFTOffer status
     // Depending on the status requested more fields will be added to the select clause. i.e. if CANCELLED status
-    // is requested the cancelledAt field will be added if PURCHASED status is requested the purchasedAt and buyer fields will be
+    // is requested the cancelledAt field will be added if ACCEPTED status is requested the acceptedAt field will be
     // added to the select clause. In case  no specific status is used for filtering all related fields will be included
     generateSelectClause(status: string): Object {
         let select = {
@@ -52,28 +33,33 @@ class NFTOfferDataAccess {
                     address: true,
                 },
             },
-            price: true,
-            listedAt: true,
-            ...(status == null || status == "PURCHASED"
-                ? {
-                      buyer: {
-                          select: { id: true, address: true },
-                      },
-                      purchasedAt: true,
-                  }
-                : {}),
+            buyer: {
+                select: {
+                    id: true,
+                    address: true,
+                },
+            },
+            offeredPrice: true,
+            sold: true,
+            status: true,
+            offerCreatedAt: true,
             ...(status == null || status == "CANCELLED"
                 ? { cancelledAt: true }
                 : {}),
+            ...(status == null || status == "ACCEPTED"
+            ? {
+                acceptedAt: true,
+                }
+            : {}),
         };
 
         return select;
     }
 
     // Read
-    async getListingById(id: number): Promise<Listing> {
+    async getNFTOfferById(id: number): Promise<NFTOffer> {
         try {
-            return await client.listing.findUnique({
+            return await client.nFTOffer.findUnique({
                 where: {
                     id: id,
                 },
@@ -93,15 +79,15 @@ class NFTOfferDataAccess {
                             address: true,
                         },
                     },
-                    price: true,
+                    offeredPrice: true,
                     sold: true,
                     status: true,
-                    listedAt: true,
-                    listedBlockNumber: true,
+                    offerCreatedAt: true,
+                    offerCreatedBlockNumber: true,
                     cancelledAt: true,
                     cancelledBlockNumber: true,
-                    purchasedAt: true,
-                    purchasedBlockNumber: true,
+                    acceptedAt: true,
+                    acceptedBlockNumber: true,
                 },
             });
         } catch (e) {
@@ -110,12 +96,12 @@ class NFTOfferDataAccess {
         }
     }
 
-    async searchListings(queryParams: Map<String, any>): Promise<Listing[]> {
+    async searchNFTOffers(queryParams: Map<String, any>): Promise<NFTOffer[]> {
         try {
             const where = this.generateWhereClause(queryParams);
             const select = this.generateSelectClause(queryParams["status"]);
 
-            return await client.listing.findMany({
+            return await client.nFTOffer.findMany({
                 where,
                 select,
             });
@@ -125,53 +111,29 @@ class NFTOfferDataAccess {
         }
     }
 
-    /* async getFloorPrice(collectionAddress: string): Promise<Decimal> {
-        let floorPriceStat: Object[];
+    async getBestOffer(collectionAddress: string): Promise<Decimal> {
+        let bestOfferStat: Object[];
 
         try {
-            // Floor price
-            floorPriceStat = await client.listing.groupBy({
+            // Best Offer
+            bestOfferStat = await client.nFTOffer.groupBy({
                 by: ["nftAddress"],
                 where: {
                     nftAddress: collectionAddress,
-                    status: Status.OPEN,
+                    status: OfferStatus.OPEN,
                 },
-                _min: {
-                    price: true,
-                },
-            });
-
-            // Given we are grouping by nftAddress the result of the query only has  one record
-            return floorPriceStat[0]? floorPriceStat[0]["_min"]["price"] : 0;
-        } catch (e) {
-            console.log(e);
-            throw e;
-        }
-    }
- */
- /*    async getTradedVolume(collectionAddress: string): Promise<Decimal> {
-        let tradedVolumeStat: Object[];
-
-        try {
-            // Traded Volume
-            tradedVolumeStat = await client.listing.groupBy({
-                by: ["nftAddress"],
-                where: {
-                    nftAddress: collectionAddress,
-                    status: Status.PURCHASED,
-                },
-                _sum: {
-                    price: true,
+                _max: {
+                    offeredPrice: true,
                 }
             });
 
             // Given we are grouping by nftAddress the result of the query only has  one record
-            return tradedVolumeStat[0]? tradedVolumeStat[0]["_sum"]["price"] : 0;
+            return bestOfferStat[0]? bestOfferStat[0]["_max"]["offeredPrice"] : 0;
         } catch (e) {
             console.log(e);
             throw e;
         }
-    } */
+    } 
 
     // Write
     async saveNFTOffer(
@@ -217,6 +179,7 @@ class NFTOfferDataAccess {
             console.log("Saved new processed NFTOffer");
         } catch (e) {
             if (e instanceof Prisma.PrismaClientKnownRequestError) {
+                console.log(e); 
                 if (e.code === "P2002") {
                     console.log(
                         `Unique constraint violation, NFTOffer for nftAddress: ${nftAddress}, tokenId: ${tokenId}, seller ${seller}, buyer ${buyer} and offer created timestamp: ${offerCreatedTimestamp} is already saved. You should review NFTOfferCreatedEvent with id: ${offerCreatedEventId}`
@@ -234,6 +197,7 @@ class NFTOfferDataAccess {
         offerCancelledEventId: number,
         nftAddress: string,
         tokenId: BigNumber,
+        seller: string,
         buyer: string,
         cancelTimestamp: any,
         cancelBlockNumber: BigNumber
@@ -251,22 +215,50 @@ class NFTOfferDataAccess {
                 }
             });
 
-            await client.nFTOffer.update({
+            const sellerRecord = await client.user.findUnique({
                 where: {
-                    nftAddress_tokenId_buyerId_status: {   
-                        nftAddress: nftAddress,
-                        tokenId: tokenId.toString(),
-                        buyerId: buyerRecord.id,
-                        status: OfferStatus.OPEN,     
-                    }      
+                    address: seller
                 },
-                data: {
-                    status: OfferStatus.CANCELLED,
-                    cancelledAt: new Date(cancelTimestamp.toString() * 1000),
-                    cancelledBlockNumber: cancelBlockNumber.toString(),
-                },
+                select: {
+                    id: true
+                }
             });
-            console.log("Processed NFTOffer Cancellation");
+
+            const openOffers = await client.nFTOffer.findMany({
+                where: {
+                    nftAddress: nftAddress,
+                    tokenId: tokenId.toString(),
+                    sellerId: sellerRecord.id,
+                    buyerId: buyerRecord.id,
+                    status: OfferStatus.OPEN,     
+                    offerCreatedAt: {
+                        lt: new Date(cancelTimestamp.toString() * 1000)
+                    }
+                },
+                orderBy: {
+                    offerCreatedAt: 'asc',
+                },
+                take: 1
+            });
+
+            if (openOffers[0] != null ) {
+                await client.nFTOffer.update({
+                    where: {
+                        id: openOffers[0].id
+                    },
+                    data: {
+                        status: OfferStatus.CANCELLED,
+                        cancelledAt: new Date(cancelTimestamp.toString() * 1000),
+                        cancelledBlockNumber: cancelBlockNumber.toString(),
+                    },
+                });
+                console.log("Processed NFTOffer Cancellation");
+            } {
+                console.log(
+                    `NFTOffer not found, there's no OPEN NFTOffer for nftAddress: ${nftAddress}, tokenId: ${tokenId} and buyer ${buyer}. You should review NFTOfferCancelledEvent with id: ${offerCancelledEventId}`
+                );
+            }
+          
         } catch (e) {
             if (e instanceof Prisma.PrismaClientKnownRequestError) {
                 if (e.code === "P2025") {
@@ -281,11 +273,11 @@ class NFTOfferDataAccess {
         }
     }
 
-       // The assumption is that there must be one and only one NFTOffer OPEN for the combination of NFTAddress, TokenId and Buyer
-       async acceptNFTOffer(
+    async acceptNFTOffer(
         offerAcceptedEventId: number,
         nftAddress: string,
         tokenId: BigNumber,
+        seller: string,
         buyer: string,
         acceptedTimestamp: any,
         acceptedBlockNumber: BigNumber
@@ -303,23 +295,51 @@ class NFTOfferDataAccess {
                 }
             });
 
-            await client.nFTOffer.update({
+            const sellerRecord = await client.user.findUnique({
                 where: {
-                    nftAddress_tokenId_buyerId_status: {   
-                        nftAddress: nftAddress,
-                        tokenId: tokenId.toString(),
-                        buyerId: buyerRecord.id,
-                        status: OfferStatus.OPEN,     
-                    }      
+                    address: seller
                 },
-                data: {
-                    status: OfferStatus.ACCEPTED,
-                    sold: true,
-                    acceptedAt: new Date(acceptedTimestamp.toString() * 1000),
-                    acceptedBlockNumber: acceptedBlockNumber.toString(),
-                },
+                select: {
+                    id: true
+                }
             });
-            console.log("Processed NFTOffer Acceptance");
+
+            const openOffers = await client.nFTOffer.findMany({
+                where: {
+                    nftAddress: nftAddress,
+                    tokenId: tokenId.toString(),
+                    sellerId: sellerRecord.id,
+                    buyerId: buyerRecord.id,
+                    status: OfferStatus.OPEN,     
+                    offerCreatedAt: {
+                        lt: new Date(acceptedTimestamp.toString() * 1000)
+                    }
+                },
+                orderBy: {
+                    offerCreatedAt: 'asc',
+                },
+                take: 1
+            });
+
+            if (openOffers[0] != null ) {
+                await client.nFTOffer.update({
+                    where: {
+                        id: openOffers[0].id
+                    },
+                    data: {
+                        status: OfferStatus.ACCEPTED,
+                        sold: true,
+                        cancelledAt: new Date(acceptedTimestamp.toString() * 1000),
+                        cancelledBlockNumber: acceptedBlockNumber.toString(),
+                    },
+                });
+                console.log("Processed NFTOffer Acceptance");
+            } {
+                console.log(
+                    `NFTOffer not found, there's no OPEN NFTOffer for nftAddress: ${nftAddress}, tokenId: ${tokenId} and buyer ${buyer}. You should review NFTOfferAcceptedEvent with id: ${offerAcceptedEventId}`
+                );
+            }
+          
         } catch (e) {
             if (e instanceof Prisma.PrismaClientKnownRequestError) {
                 if (e.code === "P2025") {

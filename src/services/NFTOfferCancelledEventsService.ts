@@ -34,6 +34,7 @@ class NFTOfferCancelledEventsService {
             offerCancelledEventId,
             nftOfferCancelledEvent.args["nftAddress"],
             nftOfferCancelledEvent.args["tokenId"],
+            nftOfferCancelledEvent.args["seller"],
             nftOfferCancelledEvent.args["buyer"],
             nftOfferCancelledEvent.args["offerCancelledTimestamp"],
             eventBlockNumber

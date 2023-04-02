@@ -1,6 +1,6 @@
 import { indexerAPIConfig } from "../config/config";
 
-// Import data access
+
 // Listing
 const ListingsService = require("../services/ListingsService");
 const listingsService = new ListingsService();
@@ -13,7 +13,7 @@ const LISTING_BY_ID_500_ERROR =
     "An error ocurred while trying to get the requested listing";
 const LISTING_NOT_FOUND = "Listing not found";
 const COLLECTION_STATS_500_ERROR = "An error occurred while trying to retrieve collection stats";
-class ListingController {
+class ListingsController {
     /**
      * @description Create an instance of PostService
      */
@@ -70,4 +70,4 @@ class ListingController {
     }
 }
 
-module.exports = ListingController;
+module.exports = ListingsController;

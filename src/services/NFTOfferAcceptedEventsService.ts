@@ -34,6 +34,7 @@ class NFTOfferAcceptedEventsService {
             offerAcceptedEventId,
             nftOfferAcceptedEvent.args["nftAddress"],
             nftOfferAcceptedEvent.args["tokenId"],
+            nftOfferAcceptedEvent.args["seller"],
             nftOfferAcceptedEvent.args["buyer"],
             nftOfferAcceptedEvent.args["offerAcceptedTimestamp"],
             nftOfferAcceptedEvent.blockNumber

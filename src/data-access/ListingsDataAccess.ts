@@ -6,10 +6,6 @@ import { Status, Listing } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/index";
 import { BigNumber } from "ethers";
 
-interface ITest {
-    readonly foo: number;
-}
-
 class ListingsDataAccess {
     // Helper function to generate dynamic where clause
     // We need specific logic for the buyerAddress param because it's a nested relationship, all parameter that are nested relationship

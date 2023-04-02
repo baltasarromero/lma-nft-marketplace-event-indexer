@@ -5,6 +5,9 @@ import { Decimal } from "@prisma/client/runtime/index";
 // Listing
 const ListingsDataAccess = require("../data-access/ListingsDataAccess");
 const listingsDataAccess = new ListingsDataAccess();
+// NFTOffers
+const NFTOffersDataAccess = require("../data-access/NFTOffersDataAccess");
+const nftOffersDataAccess = new NFTOffersDataAccess();
 
 class ListingsService {
     /**
@@ -23,11 +26,13 @@ class ListingsService {
     async getCollectionStats(collectionAddress: string) : Promise<Object> {
         const floorPrice: Decimal = await listingsDataAccess.getFloorPrice(collectionAddress);
         const tradedVolume: Decimal = await listingsDataAccess.getTradedVolume(collectionAddress);
+        const bestOffer: Decimal = await nftOffersDataAccess.getBestOffer(collectionAddress);
 
         const result = {
             nftAddress: collectionAddress,
             floorPrice: floorPrice,
-            tradedVolume: tradedVolume
+            tradedVolume: tradedVolume,
+            bestOffer: bestOffer,
         }
 
         return result;

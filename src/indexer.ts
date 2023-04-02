@@ -27,7 +27,6 @@ module.exports = async function () {
     await purchaseEventsServiceInstance.getNewEvents();
     await nftOfferCreatedEventsServiceInstance.getNewEvents();
     await nftOfferCancelledEventsServiceInstance.getNewEvents();
-    await nftOfferCancelledEventsServiceInstance.getNewEvents();
     await nftOfferAcceptedEventsServiceInstance.getNewEvents();
     
     console.log("Finished querying events for NFT Marketplace");

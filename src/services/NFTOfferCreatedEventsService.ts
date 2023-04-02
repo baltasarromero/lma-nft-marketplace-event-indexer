@@ -21,6 +21,15 @@ class NFTOfferCreatedEventsService {
     async saveRawEventAndProcess(nftOfferCreatedEvent: Event) {
         const eventBlockNumber = nftOfferCreatedEvent.blockNumber;
         const transactionHash = nftOfferCreatedEvent.transactionHash;
+
+        console.log(`OFFer created event   ${nftOfferCreatedEvent.args["nftAddress"]},
+        ${nftOfferCreatedEvent.args["tokenId"]},
+        ${nftOfferCreatedEvent.args["seller"]},
+        ${nftOfferCreatedEvent.args["buyer"]},
+        ${nftOfferCreatedEvent.args["offer"]},
+        ${nftOfferCreatedEvent.args["offerCreatedTimestamp"]},
+        ${nftOfferCreatedEvent.blockNumber}` );
+
         // Save raw event
         const offerCreatedEventId: number =
             await nftOfferCreatedEventsDataAccess.saveRawNFTOfferCreatedEvent(
@@ -28,7 +37,9 @@ class NFTOfferCreatedEventsService {
                 eventBlockNumber,
                 transactionHash
             );
-
+       
+        console.log();
+                
         // Process  event and create/update offer state
         await nftOffersDataAccess.saveNFTOffer(
             offerCreatedEventId,

@@ -66,7 +66,7 @@ model NFTOfferCreatedEvent {
   transactionHash         String
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
-  @@unique([nftAddress, tokenId, seller, buyer, offerCreatedTimestamp])
+  @@unique([nftAddress, tokenId, buyer, offerCreatedTimestamp])
 }
 
 model NFTOfferCancelledEvent {
@@ -80,7 +80,7 @@ model NFTOfferCancelledEvent {
   transactionHash           String
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
-  @@unique([nftAddress, tokenId, seller, buyer, offerCancelledTimestamp])
+  @@unique([nftAddress, tokenId, buyer, offerCancelledTimestamp])
 }
 
 model NFTOfferAcceptedEvent {
@@ -95,7 +95,7 @@ model NFTOfferAcceptedEvent {
   transactionHash           String
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
-  @@unique([nftAddress, tokenId, seller, buyer, offerAcceptedTimestamp])
+  @@unique([nftAddress, tokenId, buyer, offerAcceptedTimestamp])
 }
 
 // Processed data

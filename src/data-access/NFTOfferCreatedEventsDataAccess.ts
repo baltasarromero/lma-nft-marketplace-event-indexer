@@ -13,7 +13,6 @@ class NFTOfferCreatedEventsDataAccess {
         transactionHash: string
     ) : Promise<number> {
         try {
-            console.log("trying to insert offerCreatedEvent with args:", args);
             const offerCreatedEvent = await client.nFTOfferCreatedEvent.create({
                 data: {
                     nftAddress: args["nftAddress"],

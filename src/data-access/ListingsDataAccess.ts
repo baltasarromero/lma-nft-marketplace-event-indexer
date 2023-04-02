@@ -218,7 +218,7 @@ class ListingsDataAccess {
         }
     }
 
-    // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
+  /*   // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
     async cancelListing(
         listingCancelledEventId: number,
         nftAddress: string,
@@ -245,10 +245,69 @@ class ListingsDataAccess {
             });
             console.log("Processed Listing Cancellation");
         } catch (e) {
+            console.log(e);
             if (e instanceof Prisma.PrismaClientKnownRequestError) {
                 if (e.code === "P2025") {
                     console.log(
                         `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress} and tokenId: ${tokenId}. You should review CancelledListingEvent with id: ${listingCancelledEventId}`
+                    );
+                }
+            } else {
+                throw e;
+            }
+        }
+    } */
+
+    // The assumption is that there must be one and only one NFTOffer OPEN for the combination of NFTAddress, TokenId and Buyer
+    async cancelListing(
+        listingCancelledEventId: number,
+        nftAddress: string,
+        tokenId: BigNumber,
+        cancelTimestamp: any,
+        cancelBlockNumber: BigNumber
+    ) {
+        try {
+            console.log("Cancelling Listing");
+            // TODO This is a tradeoff to reduce implementation time
+            // Should use a raw query to avoid running two queries
+            const openListings = await client.listing.findMany({
+                where: {
+                    nftAddress: nftAddress,
+                    tokenId: tokenId.toString(),
+                    status: Status.OPEN,     
+                    listedAt: {
+                        lt: new Date(cancelTimestamp.toString() * 1000)
+                    }
+                },
+                orderBy: {
+                    listedAt: 'asc',
+                },
+                take: 1
+            });
+
+            if (openListings[0] != null ) {
+                await client.listing.update({
+                    where: {
+                        id: openListings[0].id
+                    },
+                    data: {
+                        status: Status.CANCELLED,
+                        cancelledAt: new Date(cancelTimestamp.toString() * 1000),
+                        cancelledBlockNumber: cancelBlockNumber.toString(),
+                    },
+                });
+                console.log("Processed Listing Cancellation");
+            } {
+                console.log(
+                    `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress} and tokenId: ${tokenId}. You should review ListingCancelledEvent with id: ${listingCancelledEventId}`
+                );
+            }
+          
+        } catch (e) {
+            if (e instanceof Prisma.PrismaClientKnownRequestError) {
+                if (e.code === "P2025") {
+                    console.log(
+                        `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress} and tokenId: ${tokenId}. You should review ListingCancelledEvent with id: ${listingCancelledEventId}`
                     );
                 }
             } else {
@@ -258,8 +317,63 @@ class ListingsDataAccess {
         }
     }
 
-    // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
     async purchaseListing(
+        listingPurchasedEventId: number,
+        nftAddress: string,
+        tokenId: BigNumber,
+        buyer: string,
+        purchaseTimestamp: any,
+        purchaseBlockNumber: BigNumber
+    ) {
+        try {
+            // TODO This is a tradeoff to reduce implementation time
+            // Should use a raw query to avoid running two queries
+            const openListings = await client.listing.findMany({
+                where: {
+                    nftAddress: nftAddress,
+                    tokenId: tokenId.toString(),
+                    status: Status.OPEN,     
+                    listedAt: {
+                        lt: new Date(purchaseTimestamp.toString() * 1000)
+                    }
+                },
+                orderBy: {
+                    listedAt: 'asc',
+                },
+                take: 1
+            });
+
+            if (openListings[0] != null ) {
+                await client.listing.update({
+                    where: {
+                        id: openListings[0].id
+                    },
+                    data: {
+                        status: Status.PURCHASED,
+                        sold: true,
+                        purchasedAt: new Date(purchaseTimestamp.toString() * 1000),
+                        purchasedBlockNumber: purchaseBlockNumber.toString(),
+                    },
+                });
+                console.log("Processed Listing Purchase");
+            }
+
+        }   catch (e) {
+                if (e instanceof Prisma.PrismaClientKnownRequestError) {
+                    if (e.code === "P2025") {
+                        console.log(
+                            `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress} and tokenId: ${tokenId}. You should review PurchaseEvent with id: ${listingPurchasedEventId}`
+                        );
+                    }
+                } else {
+                    console.log(e);
+                    throw e;
+                }
+            }
+    }
+
+    // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
+   /*  async purchaseListing(
         listingPurchasedEventId: number,
         nftAddress: string,
         tokenId: BigNumber,
@@ -306,7 +420,7 @@ class ListingsDataAccess {
                 throw e;
             }
         }
-    }
+    } */
 }
 
 module.exports = ListingsDataAccess;

@@ -130,7 +130,7 @@ model Listing {
   purchasedBlockNumber  Decimal? @db.Decimal(78,0)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
-  @@unique([nftAddress, tokenId, status])
+  @@unique([nftAddress, tokenId, listedAt])
 }
 
 model NFTOffer {

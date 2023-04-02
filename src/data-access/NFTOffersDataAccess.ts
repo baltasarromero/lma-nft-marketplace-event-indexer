@@ -2,11 +2,11 @@
 const { PrismaClient, Prisma } = require("@prisma/client");
 const client = new PrismaClient();
 
-import { Status, Listing } from "@prisma/client";
+import { OfferStatus, Listing } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/index";
 import { BigNumber } from "ethers";
 
-class ListingsDataAccess {
+class NFTOfferDataAccess {
     // Helper function to generate dynamic where clause
     // We need specific logic for the buyerAddress param because it's a nested relationship, all parameter that are nested relationship
     // will require similar treatment. The rest of the parameters can be added to the where clause directly
@@ -125,7 +125,7 @@ class ListingsDataAccess {
         }
     }
 
-    async getFloorPrice(collectionAddress: string): Promise<Decimal> {
+    /* async getFloorPrice(collectionAddress: string): Promise<Decimal> {
         let floorPriceStat: Object[];
 
         try {
@@ -148,8 +148,8 @@ class ListingsDataAccess {
             throw e;
         }
     }
-
-    async getTradedVolume(collectionAddress: string): Promise<Decimal> {
+ */
+ /*    async getTradedVolume(collectionAddress: string): Promise<Decimal> {
         let tradedVolumeStat: Object[];
 
         try {
@@ -171,20 +171,21 @@ class ListingsDataAccess {
             console.log(e);
             throw e;
         }
-    }
+    } */
 
     // Write
-    async saveListing(
-        listingCreatedEventId: number,
+    async saveNFTOffer(
+        offerCreatedEventId: number,
         nftAddress: string,
         tokenId: BigNumber,
         seller: string,
-        price: BigNumber,
-        listingTimestamp: any,
-        listingBlockNumber: BigNumber
+        buyer: string,
+        offer: BigNumber,
+        offerCreatedTimestamp: any,
+        offerCreatedBlockNumber: BigNumber
     ) {
         try {
-            await client.listing.create({
+            await client.nFTOffer.create({
                 data: {
                     nftAddress: nftAddress,
                     tokenId: tokenId.toString(),
@@ -198,86 +199,6 @@ class ListingsDataAccess {
                             },
                         },
                     },
-                    price: price.toString(),
-                    listedAt: new Date(listingTimestamp.toString() * 1000),
-                    listedBlockNumber: listingBlockNumber.toString(),
-                },
-            });
-            console.log("Saved new processed Listing");
-        } catch (e) {
-            if (e instanceof Prisma.PrismaClientKnownRequestError) {
-                if (e.code === "P2002") {
-                    console.log(
-                        `Unique constraint violation, Listing for nftAddress: ${nftAddress}, tokenId: ${tokenId} and listing timestamp: ${listingTimestamp} is already saved. You should review CreatedListingEvent with id: ${listingCreatedEventId}`
-                    );
-                }
-            } else {
-                console.log(e);
-                throw e;
-            }
-        }
-    }
-
-    // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
-    async cancelListing(
-        listingCancelledEventId: number,
-        nftAddress: string,
-        tokenId: BigNumber,
-        cancelTimestamp: any,
-        cancelBlockNumber: BigNumber
-    ) {
-        try {
-            console.log("Cancelling listing");
-
-            await client.listing.update({
-                where: {
-                    nftAddress_tokenId_status: {
-                        nftAddress: nftAddress,
-                        tokenId: tokenId.toString(),
-                        status: Status.OPEN,
-                    },
-                },
-                data: {
-                    status: Status.CANCELLED,
-                    cancelledAt: new Date(cancelTimestamp.toString() * 1000),
-                    cancelledBlockNumber: cancelBlockNumber.toString(),
-                },
-            });
-            console.log("Processed Listing Cancellation");
-        } catch (e) {
-            if (e instanceof Prisma.PrismaClientKnownRequestError) {
-                if (e.code === "P2025") {
-                    console.log(
-                        `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress} and tokenId: ${tokenId}. You should review CancelledListingEvent with id: ${listingCancelledEventId}`
-                    );
-                }
-            } else {
-                console.log(e);
-                throw e;
-            }
-        }
-    }
-
-    // The assumption is that there must be one and only one Listing OPEN for the combination of NFTAddress and TokenId
-    async purchaseListing(
-        listingPurchasedEventId: number,
-        nftAddress: string,
-        tokenId: BigNumber,
-        buyer: string,
-        purchaseTimestamp: any,
-        purchaseBlockNumber: BigNumber
-    ) {
-        try {
-            await client.listing.update({
-                where: {
-                    nftAddress_tokenId_status: {
-                        nftAddress: nftAddress,
-                        tokenId: tokenId.toString(),
-                        status: Status.OPEN,
-                    },
-                },
-                data: {
-                    status: Status.PURCHASED,
                     buyer: {
                         connectOrCreate: {
                             where: {
@@ -288,17 +209,122 @@ class ListingsDataAccess {
                             },
                         },
                     },
-                    sold: true,
-                    purchasedAt: new Date(purchaseTimestamp.toString() * 1000),
-                    purchasedBlockNumber: purchaseBlockNumber.toString(),
+                    offeredPrice: offer.toString(),
+                    offerCreatedAt: new Date(offerCreatedTimestamp.toString() * 1000),
+                    offerCreatedBlockNumber: offerCreatedBlockNumber.toString(),
                 },
             });
-            console.log("Processed Listing Purchase");
+            console.log("Saved new processed NFTOffer");
+        } catch (e) {
+            if (e instanceof Prisma.PrismaClientKnownRequestError) {
+                if (e.code === "P2002") {
+                    console.log(
+                        `Unique constraint violation, NFTOffer for nftAddress: ${nftAddress}, tokenId: ${tokenId}, seller ${seller}, buyer ${buyer} and offer created timestamp: ${offerCreatedTimestamp} is already saved. You should review NFTOfferCreatedEvent with id: ${offerCreatedEventId}`
+                    );
+                }
+            } else {
+                console.log(e);
+                throw e;
+            }
+        }
+    }
+
+    // The assumption is that there must be one and only one NFTOffer OPEN for the combination of NFTAddress, TokenId and Buyer
+    async cancelNFTOffer(
+        offerCancelledEventId: number,
+        nftAddress: string,
+        tokenId: BigNumber,
+        buyer: string,
+        cancelTimestamp: any,
+        cancelBlockNumber: BigNumber
+    ) {
+        try {
+            console.log("Cancelling NFTOffer");
+            // TODO This is a tradeoff to reduce implementation time
+            // Should use a raw query to avoid running two queries
+            const buyerRecord = await client.user.findUnique({
+                where: {
+                    address: buyer
+                },
+                select: {
+                    id: true
+                }
+            });
+
+            await client.nFTOffer.update({
+                where: {
+                    nftAddress_tokenId_buyerId_status: {   
+                        nftAddress: nftAddress,
+                        tokenId: tokenId.toString(),
+                        buyerId: buyerRecord.id,
+                        status: OfferStatus.OPEN,     
+                    }      
+                },
+                data: {
+                    status: OfferStatus.CANCELLED,
+                    cancelledAt: new Date(cancelTimestamp.toString() * 1000),
+                    cancelledBlockNumber: cancelBlockNumber.toString(),
+                },
+            });
+            console.log("Processed NFTOffer Cancellation");
         } catch (e) {
             if (e instanceof Prisma.PrismaClientKnownRequestError) {
                 if (e.code === "P2025") {
                     console.log(
-                        `Listing not found, there's no OPEN Listing for nftAddress: ${nftAddress} and tokenId: ${tokenId}. You should review PurchaseEvent with id: ${listingPurchasedEventId}`
+                        `NFTOffer not found, there's no OPEN NFTOffer for nftAddress: ${nftAddress}, tokenId: ${tokenId} and buyer ${buyer}. You should review NFTOfferCancelledEvent with id: ${offerCancelledEventId}`
+                    );
+                }
+            } else {
+                console.log(e);
+                throw e;
+            }
+        }
+    }
+
+       // The assumption is that there must be one and only one NFTOffer OPEN for the combination of NFTAddress, TokenId and Buyer
+       async acceptNFTOffer(
+        offerAcceptedEventId: number,
+        nftAddress: string,
+        tokenId: BigNumber,
+        buyer: string,
+        acceptedTimestamp: any,
+        acceptedBlockNumber: BigNumber
+    ) {
+        try {
+            console.log("Accepting NFTOffer");
+            // TODO This is a tradeoff to reduce implementation time
+            // Should use a raw query to avoid running two queries
+            const buyerRecord = await client.user.findUnique({
+                where: {
+                    address: buyer
+                },
+                select: {
+                    id: true
+                }
+            });
+
+            await client.nFTOffer.update({
+                where: {
+                    nftAddress_tokenId_buyerId_status: {   
+                        nftAddress: nftAddress,
+                        tokenId: tokenId.toString(),
+                        buyerId: buyerRecord.id,
+                        status: OfferStatus.OPEN,     
+                    }      
+                },
+                data: {
+                    status: OfferStatus.ACCEPTED,
+                    sold: true,
+                    acceptedAt: new Date(acceptedTimestamp.toString() * 1000),
+                    acceptedBlockNumber: acceptedBlockNumber.toString(),
+                },
+            });
+            console.log("Processed NFTOffer Acceptance");
+        } catch (e) {
+            if (e instanceof Prisma.PrismaClientKnownRequestError) {
+                if (e.code === "P2025") {
+                    console.log(
+                        `NFTOffer not found, there's no OPEN NFTOffer for nftAddress: ${nftAddress}, tokenId: ${tokenId} and buyer ${buyer}. You should review NFTOfferAcceptedEvent with id: ${offerAcceptedEventId}`
                     );
                 }
             } else {
@@ -309,4 +335,4 @@ class ListingsDataAccess {
     }
 }
 
-module.exports = ListingsDataAccess;
+module.exports = NFTOfferDataAccess;

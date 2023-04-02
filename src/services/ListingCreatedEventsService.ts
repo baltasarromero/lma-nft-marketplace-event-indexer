@@ -14,14 +14,9 @@ const listingsDataAccess = new ListingsDataAccess();
 
 class ListingCreatedEventsService {
     /**
-     * @description Create an instance of PostService
+     * @description
      */
     constructor() {}
-
-    async processEvent(listingCreatedEvent: Event) {
-        // Lookup the listing if it's not in the DB save it if it was marked as created ignore as this event
-        // was already processed if it's marked as cancelled but the creation data is missing we could update the listing
-    }
 
     async saveRawEventAndProcess(listingCreatedEvent: Event) {
         const eventBlockNumber = listingCreatedEvent.blockNumber;

@@ -11,6 +11,7 @@ datasource db {
 }
 
 // Raw event data
+// Listings
 model ListingCreatedEvent {
   id                Int      @id @default(autoincrement())
   nftAddress        String   
@@ -49,40 +50,111 @@ model PurchaseEvent {
   transactionHash     String
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+  @@unique([nftAddress, tokenId, purchaseTimestamp])
+}
+
+//NFT Offers
+model NFTOfferCreatedEvent {
+  id                      Int      @id @default(autoincrement())
+  nftAddress              String   
+  tokenId                 Decimal @db.Decimal(78,0)
+  seller                  String
+  buyer                   String
+  offer                   Decimal @db.Decimal(78,0)
+  offerCreatedTimestamp   DateTime
+  blockNumber             Decimal @db.Decimal(78,0)
+  transactionHash         String
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  @@unique([nftAddress, tokenId, seller, buyer, offerCreatedTimestamp])
+}
+
+model NFTOfferCancelledEvent {
+  id                        Int      @id @default(autoincrement())
+  nftAddress                String   
+  tokenId                   Decimal @db.Decimal(78,0)
+  seller                    String
+  buyer                     String
+  offerCancelledTimestamp   DateTime
+  blockNumber               Decimal @db.Decimal(78,0)
+  transactionHash           String
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  @@unique([nftAddress, tokenId, seller, buyer, offerCancelledTimestamp])
+}
+
+model NFTOfferAcceptedEvent {
+  id                        Int      @id @default(autoincrement())
+  nftAddress                String   
+  tokenId                   Decimal @db.Decimal(78,0)
+  seller                    String
+  buyer                     String
+  offeredPrice              Decimal @db.Decimal(78,0)
+  offerAcceptedTimestamp    DateTime
+  blockNumber               Decimal @db.Decimal(78,0)
+  transactionHash           String
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  @@unique([nftAddress, tokenId, seller, buyer, offerAcceptedTimestamp])
 }
 
 // Processed data
 model User {
-  id          Int       @id @default(autoincrement()) 
-  address     String
-  listings    Listing[] @relation("Listings")
-  purchases   Listing[] @relation("Purchases")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              Int       @id @default(autoincrement()) 
+  address         String
+  listings        Listing[] @relation("Listings")
+  purchases       Listing[] @relation("Purchases")
+  offersCreated   NFTOffer[] @relation("OffersCreated")
+  offersAccepted  NFTOffer[] @relation("OffersAccepted")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   @@unique([address])
 }
 
 model Listing {
-  id                   Int      @id @default(autoincrement()) 
-  nftAddress           String
-  tokenId              Decimal @db.Decimal(78,0)
-  seller               User     @relation(name: "Listings", fields: [sellerId], references: [id])
-  sellerId             Int
-  buyer                User?    @relation(name: "Purchases",  fields: [buyerId], references: [id])
-  buyerId              Int?
-  price                Decimal @db.Decimal(78,0)
-  sold                 Boolean  @default(false)
-  status               Status   @default(OPEN)
-  listedAt     DateTime
-  listedBlockNumber   Decimal @db.Decimal(78,0)
-  cancelledAt   DateTime?
-  cancelledBlockNumber Decimal? @db.Decimal(78,0)
-  purchasedAt    DateTime? 
+  id                    Int      @id @default(autoincrement()) 
+  nftAddress            String
+  tokenId               Decimal @db.Decimal(78,0)
+  seller                User     @relation(name: "Listings", fields: [sellerId], references: [id])
+  sellerId              Int
+  buyer                 User?    @relation(name: "Purchases",  fields: [buyerId], references: [id])
+  buyerId               Int?
+  price                 Decimal @db.Decimal(78,0)
+  sold                  Boolean  @default(false)
+  status                Status   @default(OPEN)
+  listedAt              DateTime
+  listedBlockNumber     Decimal @db.Decimal(78,0)
+  cancelledAt           DateTime?
+  cancelledBlockNumber  Decimal? @db.Decimal(78,0)
+  purchasedAt           DateTime? 
   purchasedBlockNumber  Decimal? @db.Decimal(78,0)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
   @@unique([nftAddress, tokenId, status])
 }
+
+model NFTOffer {
+  id                        Int      @id @default(autoincrement()) 
+  nftAddress                String
+  tokenId                   Decimal @db.Decimal(78,0)
+  seller                    User     @relation(name: "OffersAccepted", fields: [sellerId], references: [id])
+  sellerId                  Int
+  buyer                     User?    @relation(name: "OffersCreated",  fields: [buyerId], references: [id])
+  buyerId                   Int?
+  offeredPrice              Decimal @db.Decimal(78,0)
+  sold                      Boolean  @default(false)
+  status                    OfferStatus   @default(OPEN)
+  offerCreatedAt            DateTime
+  offerCreatedBlockNumber   Decimal @db.Decimal(78,0)
+  cancelledAt               DateTime?
+  cancelledBlockNumber      Decimal? @db.Decimal(78,0)
+  acceptedAt               DateTime? 
+  acceptedBlockNumber       Decimal? @db.Decimal(78,0)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  @@unique([nftAddress, tokenId, buyerId, status])
+}
+
 
 // Latest block per event
 model Execution {
@@ -99,8 +171,17 @@ enum Status {
   PURCHASED
 }
 
+enum OfferStatus {
+  OPEN
+  CANCELLED
+  ACCEPTED
+}
+
 enum EventType {
   LISTING_CREATED
   LISTING_CANCELLED
   PURCHASE
+  OFFER_CREATED
+  OFFER_CANCELLED
+  OFFER_ACCEPTED
 }

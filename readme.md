@@ -23,6 +23,12 @@ This indexer listens and stores in a PostgreSQL database the following events:
 
 - Purchase
 
+- NewNFTOffer
+
+- NFTOfferCancelled
+
+- NFTOfferCancelled
+
 The indexer also keeps a record of each execution with the last block number processed for each event allowing to resume the listening/processing where the indexer left off last time.
 
 Besides raw event tables and a record of the executions this app keeps a processed version of the Listing to be able to reflect it's current state based on the the raw events in order to simplify queries to serve the required APIs. The Listing table contains the processed data that reflects the state of a listing.
@@ -79,7 +85,7 @@ ETHEREUM_NETWORK = {NETWORK-NAME} //The name of the network where the NFTMarketp
 
 INFURA_PROJECT_ID = {INFURA_PROJECT_ID} //Your Infura project ID
 
-NFT_MARKETPLACE_CONTRACT_ADDRESS = {NFT_MARKETPLACE_CONTRACT_ADDRESS} // Currently sepolia address is 0x0681F44AADF8FA1eA9aC001cF0AB688266c68985
+NFT_MARKETPLACE_CONTRACT_ADDRESS = {NFT_MARKETPLACE_CONTRACT_ADDRESS} // Currently sepolia address is 0x7401B735b57Ca565A44e1D17C132b7aB2f8a15a8
 
 ```
 ##### Scheduler Configuration
@@ -240,6 +246,8 @@ This API returns stats for the requested collection. Supported stats are:
 ##### Supported Query Parameters
 **nftAddress**: This parameter is used to indicate the ethereum address of the NFT Collection that we want to retrieve stats from.
 
+#### Offers API
+Documentation Pending
 ## Pending
 
 - Pagination support
